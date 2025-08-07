@@ -166,16 +166,19 @@ function init3DScene() {
     scene.add(ambientLight);
     
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
+    // Position light higher and more to the front for better inner cavity illumination
+    directionalLight.position.set(2, 8, 4);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
     directionalLight.shadow.camera.near = 0.1;
     directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -10;
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
+    // Tighten shadow camera bounds for better resolution
+    directionalLight.shadow.camera.left = -5;
+    directionalLight.shadow.camera.right = 5;
+    directionalLight.shadow.camera.top = 5;
+    directionalLight.shadow.camera.bottom = -5;
+    directionalLight.shadow.bias = -0.0001; // Reduce shadow acne
     scene.add(directionalLight);
     
     // Add basic rotation without OrbitControls
@@ -272,101 +275,87 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     
     // Also create a second bottom facing upward (inside the mug) for double-sided
     const bottomGeometry2 = new THREE.CircleGeometry(
-        outerRadius,      // radius - full bottom
+        innerRadius,      // radius - should match inner cavity
         32               // segments
     );
     
-    // This one faces upward (inside the mug)
+    // This one faces upward (inside the mug) and positioned at the ceramic thickness level
     bottomGeometry2.rotateX(-Math.PI / 2); // Rotate so normals point upward
-    bottomGeometry2.translate(0, -mugHeight / 2, 0);
+    bottomGeometry2.translate(0, -mugHeight / 2 + ceramicThickness, 0);
     
-    // Merge all geometries
-    const mergedGeometry = new THREE.BufferGeometry();
+    // Keep outer wall separate from inner parts
+    const outerWallGeometry = outerWall;
     
-    // Get all vertex data
-    const outerPositions = outerWall.attributes.position.array;
+    // Merge inner wall and bottom geometries (parts that shouldn't have texture)
+    const innerPartsGeometry = new THREE.BufferGeometry();
+    
+    // Get vertex data for inner parts only
     const innerPositions = innerWall.attributes.position.array;
     const bottomPositions = bottomGeometry.attributes.position.array;
     const bottom2Positions = bottomGeometry2.attributes.position.array;
     
-    const outerUVs = outerWall.attributes.uv.array;
     const innerUVs = innerWall.attributes.uv.array;
     const bottomUVs = bottomGeometry.attributes.uv.array;
     const bottom2UVs = bottomGeometry2.attributes.uv.array;
     
-    const outerIndices = outerWall.index ? outerWall.index.array : [];
     const innerIndices = innerWall.index ? innerWall.index.array : [];
     const bottomIndices = bottomGeometry.index ? bottomGeometry.index.array : [];
     const bottom2Indices = bottomGeometry2.index ? bottomGeometry2.index.array : [];
     
-    // Combine all positions
-    const totalPositions = new Float32Array(
-        outerPositions.length + innerPositions.length + bottomPositions.length + bottom2Positions.length
+    // Combine inner parts positions
+    const innerTotalPositions = new Float32Array(
+        innerPositions.length + bottomPositions.length + bottom2Positions.length
     );
-    const totalUVs = new Float32Array(
-        outerUVs.length + innerUVs.length + bottomUVs.length + bottom2UVs.length
+    const innerTotalUVs = new Float32Array(
+        innerUVs.length + bottomUVs.length + bottom2UVs.length
     );
     
-    let offset = 0;
-    totalPositions.set(outerPositions, offset);
-    totalUVs.set(outerUVs, offset / 3 * 2);
-    offset += outerPositions.length;
+    let innerOffset = 0;
+    innerTotalPositions.set(innerPositions, innerOffset);
+    innerTotalUVs.set(innerUVs, innerOffset / 3 * 2);
+    innerOffset += innerPositions.length;
     
-    totalPositions.set(innerPositions, offset);
-    totalUVs.set(innerUVs, offset / 3 * 2);
-    offset += innerPositions.length;
+    innerTotalPositions.set(bottomPositions, innerOffset);
+    innerTotalUVs.set(bottomUVs, innerOffset / 3 * 2);
+    innerOffset += bottomPositions.length;
     
-    totalPositions.set(bottomPositions, offset);
-    totalUVs.set(bottomUVs, offset / 3 * 2);
-    offset += bottomPositions.length;
+    innerTotalPositions.set(bottom2Positions, innerOffset);
+    innerTotalUVs.set(bottom2UVs, innerOffset / 3 * 2);
     
-    totalPositions.set(bottom2Positions, offset);
-    totalUVs.set(bottom2UVs, offset / 3 * 2);
-    
-    // Combine indices with proper offsets
-    const totalIndices = [];
-    let vertexOffset = 0;
-    
-    // Outer wall indices
-    if (outerIndices.length > 0) {
-        for (let i = 0; i < outerIndices.length; i++) {
-            totalIndices.push(outerIndices[i] + vertexOffset);
-        }
-    }
-    vertexOffset += outerPositions.length / 3;
+    // Combine inner parts indices with proper offsets
+    const innerTotalIndices = [];
+    let innerVertexOffset = 0;
     
     // Inner wall indices (reversed to face inward)
     if (innerIndices.length > 0) {
         for (let i = 0; i < innerIndices.length; i += 3) {
-            totalIndices.push(innerIndices[i + 2] + vertexOffset);
-            totalIndices.push(innerIndices[i + 1] + vertexOffset);
-            totalIndices.push(innerIndices[i] + vertexOffset);
+            innerTotalIndices.push(innerIndices[i + 2] + innerVertexOffset);
+            innerTotalIndices.push(innerIndices[i + 1] + innerVertexOffset);
+            innerTotalIndices.push(innerIndices[i] + innerVertexOffset);
         }
     }
-    vertexOffset += innerPositions.length / 3;
+    innerVertexOffset += innerPositions.length / 3;
     
     // Bottom indices
     if (bottomIndices.length > 0) {
         for (let i = 0; i < bottomIndices.length; i++) {
-            totalIndices.push(bottomIndices[i] + vertexOffset);
+            innerTotalIndices.push(bottomIndices[i] + innerVertexOffset);
         }
     }
-    vertexOffset += bottomPositions.length / 3;
+    innerVertexOffset += bottomPositions.length / 3;
     
     // Second bottom indices
     if (bottom2Indices.length > 0) {
         for (let i = 0; i < bottom2Indices.length; i++) {
-            totalIndices.push(bottom2Indices[i] + vertexOffset);
+            innerTotalIndices.push(bottom2Indices[i] + innerVertexOffset);
         }
     }
     
-    // Set geometry attributes
-    mergedGeometry.setAttribute('position', new THREE.BufferAttribute(totalPositions, 3));
-    mergedGeometry.setAttribute('uv', new THREE.BufferAttribute(totalUVs, 2));
-    mergedGeometry.setIndex(totalIndices);
-    mergedGeometry.computeVertexNormals();
-    
-    const bodyGeometry = mergedGeometry;
+    // Set inner parts geometry attributes
+    innerPartsGeometry.setAttribute('position', new THREE.BufferAttribute(innerTotalPositions, 3));
+    innerPartsGeometry.setAttribute('uv', new THREE.BufferAttribute(innerTotalUVs, 2));
+    innerPartsGeometry.setIndex(innerTotalIndices);
+    innerPartsGeometry.computeVertexNormals();
     
     // Create handle using torus geometry for a realistic C-shaped handle
     const handleOuterRadius = mugHeight / 3.0; // Handle height proportional to mug
@@ -391,21 +380,29 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     const handleX = 0;
     console.log("handleX", handleX);
     const handleY = 0; // Center vertically
-    const handleZ = mugRadius;
+    const handleZ = mugRadius - ceramicThickness;
     handleGeometry.translate(handleX, handleY, handleZ);
     
-    // Create group to hold both geometries
+    // Create group to hold all geometries
     const mugGroup = new THREE.Group();
     
-    // Create meshes
-    const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    // Create meshes with basic materials (will be updated with proper materials later)
+    const outerWallMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const innerPartsMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
     const handleMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
     
-    const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    const outerWallMesh = new THREE.Mesh(outerWallGeometry, outerWallMaterial);
+    const innerPartsMesh = new THREE.Mesh(innerPartsGeometry, innerPartsMaterial);
     const handleMesh = new THREE.Mesh(handleGeometry, handleMaterial);
     
-    // Add both to group
-    mugGroup.add(bodyMesh);
+    // Mark meshes for identification
+    outerWallMesh.name = 'outerWall';
+    innerPartsMesh.name = 'innerParts';
+    handleMesh.name = 'handle';
+    
+    // Add all to group
+    mugGroup.add(outerWallMesh);
+    mugGroup.add(innerPartsMesh);
     mugGroup.add(handleMesh);
     
     return mugGroup;
@@ -494,21 +491,32 @@ async function update3DMug() {
     // Apply materials to all meshes in the group
     mugMesh.traverse((child) => {
         if (child.isMesh) {
-            // Apply texture to body, simple material to handle
-            if (texture && child === mugMesh.children[0]) { // Body mesh (first child)
+            // Apply texture only to outer wall
+            if (texture && child.name === 'outerWall') {
                 child.material = new THREE.MeshLambertMaterial({
                     color: 0xffffff,
                     map: texture
                 });
-            } else {
-                // Handle or fallback material
+                // Outer wall casts and receives shadows
+                child.castShadow = true;
+                child.receiveShadow = true;
+            } else if (child.name === 'innerParts') {
+                // Inner parts get plain white material (no texture)
                 child.material = new THREE.MeshLambertMaterial({
                     color: 0xffffff
                 });
+                // Inner parts cast shadows on each other but don't cast external shadows
+                child.castShadow = true;
+                child.receiveShadow = true;
+            } else {
+                // Handle gets plain white material
+                child.material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff
+                });
+                // Handle casts shadows
+                child.castShadow = true;
+                child.receiveShadow = true;
             }
-            // Enable shadows for realistic appearance
-            child.castShadow = true;
-            child.receiveShadow = true;
         }
     });
     
