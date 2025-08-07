@@ -6,6 +6,39 @@ body.dark {
     color: #f8fafc; /* slate-50 */
 }
 
+/* Ensure all text elements are visible in dark mode */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+    color: #f8fafc; /* slate-50 */
+}
+
+.dark p,
+.dark span,
+.dark div,
+.dark label {
+    color: #e2e8f0; /* slate-200 */
+}
+
+.dark .text-slate-900 {
+    color: #f8fafc !important; /* slate-50 */
+}
+
+.dark .text-slate-800 {
+    color: #f1f5f9 !important; /* slate-100 */
+}
+
+.dark .text-slate-700 {
+    color: #e2e8f0 !important; /* slate-200 */
+}
+
+.dark .text-slate-600 {
+    color: #cbd5e1 !important; /* slate-300 */
+}
+
 /* Dark mode cards */
 .dark .card {
     background-color: #334155; /* slate-700 */
@@ -140,4 +173,40 @@ body.dark {
 
 .dark #darkModeToggle:hover {
     background-color: #475569; /* slate-600 */
+}
+
+/* Additional text visibility fixes */
+.dark button {
+    color: #f8fafc; /* slate-50 */
+}
+
+.dark .btn-primary {
+    color: #ffffff !important;
+}
+
+.dark .btn-secondary {
+    color: #f8fafc !important; /* slate-50 */
+}
+
+.dark input[type="text"],
+.dark input[type="number"],
+.dark textarea,
+.dark select {
+    color: #f8fafc !important; /* slate-50 */
+}
+
+.dark option {
+    background-color: #475569; /* slate-600 */
+    color: #f8fafc; /* slate-50 */
+}
+
+/* Fix any remaining invisible text */
+.dark * {
+    border-color: #64748b; /* slate-500 - ensure borders are visible */
+}
+
+.dark .font-medium,
+.dark .font-semibold,
+.dark .font-bold {
+    color: #f8fafc; /* slate-50 */
 }
