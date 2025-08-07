@@ -173,15 +173,16 @@ export async function generateAndDownloadCutout() {
     // Check if exterior-only mode is enabled
     const exteriorOnlyMode = document.getElementById('exteriorOnlyMode')?.checked || false;
     
-    let svgForCutout;
-    
     if (exteriorOnlyMode) {
-        // Extract only the main path (exterior outline) from the SVG
-        svgForCutout = createExteriorOnlySVG();
-    } else {
-        // Create version with white background for processing (full cutout)
-        svgForCutout = state.svgForDesign.replace('<svg', '<svg style="background-color: white;"');
+        // For exterior-only, export pure SVG vector path without rasterization
+        const exteriorOnlySVG = createExteriorOnlySVG();
+        const filename = `${dom.projectNameInput.value.replace(/[^a-zA-Z0-9_-]/g, '') || 'mug-cutout'}-exterior.svg`;
+        triggerDownload(exteriorOnlySVG, filename);
+        return;
     }
+    
+    // For full cutout with artwork, we still need to rasterize to create the mask
+    let svgForCutout = state.svgForDesign.replace('<svg', '<svg style="background-color: white;"');
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -297,17 +298,40 @@ export function handleImageUpload(event, imageType) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            if (imageType === 'face') state.uploadedFaceImage = e.target.result;
-            if (imageType === 'back') state.uploadedBackImage = e.target.result;
-            if (imageType === 'bg') state.uploadedBgImageData = e.target.result;
-            
-            // Trigger template regeneration
-            // Note: This import needs to be added when main.js is created
-            if (window.generateTemplate) {
-                window.generateTemplate();
-            }
-        };
-        reader.readAsDataURL(file);
+        
+        // Check if uploaded file is SVG
+        if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
+            // For SVG files, read as text to preserve vector data
+            reader.onload = (e) => {
+                const svgContent = e.target.result;
+                // Store both the raw SVG content and a flag indicating it's vector
+                const vectorData = {
+                    type: 'svg',
+                    content: svgContent,
+                    dataUrl: `data:image/svg+xml;base64,${btoa(svgContent)}`
+                };
+                
+                if (imageType === 'face') state.uploadedFaceImage = vectorData.dataUrl;
+                if (imageType === 'back') state.uploadedBackImage = vectorData.dataUrl;
+                if (imageType === 'bg') state.uploadedBgImageData = vectorData.dataUrl;
+                
+                if (window.generateTemplate) {
+                    window.generateTemplate();
+                }
+            };
+            reader.readAsText(file);
+        } else {
+            // For raster images (JPG, PNG, etc.), use data URL as before
+            reader.onload = (e) => {
+                if (imageType === 'face') state.uploadedFaceImage = e.target.result;
+                if (imageType === 'back') state.uploadedBackImage = e.target.result;
+                if (imageType === 'bg') state.uploadedBgImageData = e.target.result;
+                
+                if (window.generateTemplate) {
+                    window.generateTemplate();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
     }
 }
