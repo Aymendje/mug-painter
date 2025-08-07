@@ -559,23 +559,35 @@ export async function createMugTexture(svgForDesign) {
     const svgBlob = new Blob([svg3D], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     
-    return new Promise((resolve) => {
-        img.onload = () => {
+    return new Promise(async (resolve) => {
+        img.onload = async () => {
             console.log('SVG loaded for texture');
             
-            // Draw SVG to canvas
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            // Create Three.js texture
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            
-            URL.revokeObjectURL(url);
-            console.log('Texture created successfully');
-            resolve(texture);
+            try {
+                // Wait for fonts to be ready in the document
+                await document.fonts.ready;
+                
+                // Additional small delay to ensure SVG fonts are applied
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Draw SVG to canvas
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Create Three.js texture
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                
+                URL.revokeObjectURL(url);
+                console.log('Texture created successfully with fonts');
+                resolve(texture);
+            } catch (err) {
+                console.error('Error drawing SVG to canvas:', err);
+                URL.revokeObjectURL(url);
+                resolve(null);
+            }
         };
         
         img.onerror = (err) => {
@@ -624,6 +636,9 @@ export async function update3DMug() {
     
     // Create new mug geometry (returns a Group with body and handle)
     state.mugMesh = create3DMugGeometry(height, diameter, handleWidth);
+    
+    // Wait for all fonts to be ready before creating texture
+    await document.fonts.ready;
     
     // Create texture from current SVG
     let texture = null;
