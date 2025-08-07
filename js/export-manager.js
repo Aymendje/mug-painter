@@ -19,6 +19,9 @@ export function triggerDownload(content, filename) {
 
 // === PNG EXPORT ===
 export async function renderAndDownloadPNG(svgString, filename) {
+    // Wait for all fonts to be ready before export
+    await document.fonts.ready;
+    
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
@@ -26,7 +29,12 @@ export async function renderAndDownloadPNG(svgString, filename) {
     const url = URL.createObjectURL(svgBlob);
 
     await new Promise((resolve, reject) => {
-        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        img.onload = async () => { 
+            // Additional delay to ensure fonts are applied in SVG
+            await new Promise(resolve => setTimeout(resolve, 100));
+            URL.revokeObjectURL(url); 
+            resolve(); 
+        };
         img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
         img.src = url;
     });
@@ -57,6 +65,9 @@ export async function renderAndDownloadPNG(svgString, filename) {
 
 // === PDF EXPORT ===
 export async function renderAndDownloadPDF(svgString, filename) {
+    // Wait for all fonts to be ready before export
+    await document.fonts.ready;
+    
     // Letter size in horizontal orientation: 11" x 8.5" (279.4mm x 215.9mm)
     // Minimum margins: 6.3mm on all sides
     const { jsPDF } = window.jspdf;
@@ -83,7 +94,12 @@ export async function renderAndDownloadPDF(svgString, filename) {
     const url = URL.createObjectURL(svgBlob);
 
     await new Promise((resolve, reject) => {
-        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        img.onload = async () => { 
+            // Additional delay to ensure fonts are applied in SVG
+            await new Promise(resolve => setTimeout(resolve, 100));
+            URL.revokeObjectURL(url); 
+            resolve(); 
+        };
         img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
         img.src = url;
     });
@@ -151,6 +167,9 @@ function createExteriorOnlySVG() {
 export async function generateAndDownloadCutout() {
     if (!state.svgForDesign) return;
     
+    // Wait for all fonts to be ready before export
+    await document.fonts.ready;
+    
     // Check if exterior-only mode is enabled
     const exteriorOnlyMode = document.getElementById('exteriorOnlyMode')?.checked || false;
     
@@ -171,7 +190,12 @@ export async function generateAndDownloadCutout() {
     const url = URL.createObjectURL(svgBlob);
 
     await new Promise((resolve, reject) => {
-        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        img.onload = async () => { 
+            // Additional delay to ensure fonts are applied in SVG
+            await new Promise(resolve => setTimeout(resolve, 100));
+            URL.revokeObjectURL(url); 
+            resolve(); 
+        };
         img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
         img.src = url;
     });

@@ -2,28 +2,11 @@
 
 import { state, dom, GOOGLE_FONTS } from './config.js';
 
-// === FONT DATA URL FETCHING ===
+// === FONT DATA URL FETCHING (SIMPLIFIED FOR CORS) ===
 export async function getFontDataURL(fontFamily) {
-    if (state.fontCache[fontFamily]) return state.fontCache[fontFamily];
-    
-    try {
-        const url = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}:wght@400&display=swap`;
-        const css = await fetch(url).then(res => res.text());
-        const fontUrlMatch = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
-        
-        if (!fontUrlMatch) return null;
-        
-        const fontUrl = fontUrlMatch[1];
-        const fontBuffer = await fetch(fontUrl).then(res => res.arrayBuffer());
-        const base64 = btoa(new Uint8Array(fontBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-        const dataUrl = `data:font/woff2;base64,${base64}`;
-        
-        state.fontCache[fontFamily] = dataUrl;
-        return dataUrl;
-    } catch (e) { 
-        console.error("Could not fetch font", e); 
-        return null; 
-    }
+    // For SVG export, we'll rely on the browser's loaded fonts rather than embedding
+    // This avoids CORS issues while still providing font support
+    return null; // Return null to use browser fonts
 }
 
 // === FONT LOADING AND EMBEDDING ===
@@ -42,34 +25,27 @@ export async function loadAndEmbedFonts() {
     
     if (fontsToLoad.size === 0) return '';
 
-    // Fetch font data URLs for all fonts to load
-    const stylePromises = Array.from(fontsToLoad).map(async font => {
-        const dataUrl = await getFontDataURL(font);
-        return dataUrl ? `@font-face { font-family: '${font}'; src: url(${dataUrl}); }` : null;
-    });
-
-    const styleRules = (await Promise.all(stylePromises)).filter(Boolean);
+    // Load fonts into browser font system (using already loaded Google Fonts)
+    const fontLoadPromises = Array.from(fontsToLoad).map(font => 
+        document.fonts.load(`12px "${font}"`).catch(err => {
+            console.warn(`Could not load font ${font}:`, err);
+            return null;
+        })
+    );
     
-    if (styleRules.length > 0) {
-        // Update dynamic styles
-        let styleEl = document.getElementById('dynamic-font-styles');
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = 'dynamic-font-styles';
-            document.head.appendChild(styleEl);
-        }
-        styleEl.textContent = styleRules.join('\n');
+    await Promise.all(fontLoadPromises);
+    
+    // For SVG export, create a style block that references the Google Fonts
+    // This tells the SVG to use the fonts loaded via link tags in the HTML
+    if (fontsToLoad.size > 0) {
+        const fontImports = Array.from(fontsToLoad).map(font => 
+            `@import url('https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400&display=swap');`
+        ).join('\n');
         
-        // Load fonts into browser font system
-        const fontLoadPromises = Array.from(fontsToLoad).map(font => 
-            document.fonts.load(`12px "${font}"`)
-        );
-        await Promise.all(fontLoadPromises).catch(err => 
-            console.error("Font loading error:", err)
-        );
+        return `<style><![CDATA[${fontImports}]]></style>`;
     }
     
-    return `<style>${styleRules.join(' ')}</style>`;
+    return '';
 }
 
 // === GOOGLE FONTS LOADING ===
@@ -84,7 +60,11 @@ export function loadGoogleFonts() {
 
 // === FONT PRE-FETCHING ===
 export function prefetchAllFonts() {
+    // Pre-load fonts using the browser's font loading API
     GOOGLE_FONTS.forEach(font => {
-        getFontDataURL(font);
+        document.fonts.load(`12px "${font}"`).catch(err => {
+            // Ignore errors - font may not be available yet
+            console.log(`Font ${font} will be loaded when needed`);
+        });
     });
 }
