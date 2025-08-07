@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mug Painter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-800 flex items-center justify-center min-h-screen p-4 sm:p-6">
+
+    <main class="w-full max-w-6xl mx-auto">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-slate-900">Mug Painter : Wrap Generator for Mugs</h1>
+            <p class="mt-2 text-lg text-slate-600">Design and export custom templates for your sublimation projects.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column: Controls -->
+            <div class="grid grid-cols-1 gap-8">
+                 <!-- Project Name -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-slate-900 mb-4">Project Name</h2>
+                    <div class="input-group">
+                        <label for="projectName" class="font-medium text-sm text-slate-700">Enter a filename for your project.</label>
+                        <input type="text" id="projectName" value="my-mug-design" class="input-field w-full">
+                    </div>
+                </div>
+                <!-- Mug Dimensions -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-slate-900 mb-4">1. Mug Dimensions</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="input-group">
+                            <label for="mugHeight" class="font-medium text-sm text-slate-700">Height (mm)</label>
+                            <input type="number" id="mugHeight" value="96.2" class="input-field w-full">
+                        </div>
+                        <div class="input-group">
+                            <label for="mugDiameter" class="font-medium text-sm text-slate-700">Diameter (mm)</label>
+                            <input type="number" id="mugDiameter" value="84.0" class="input-field w-full">
+                        </div>
+                         <div class="input-group sm:col-span-2 lg:col-span-1">
+                            <label for="handleAreaWidth" class="font-medium text-sm text-slate-700">Handle Width (mm)</label>
+                            <input type="number" id="handleAreaWidth" value="15.4" class="input-field w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Background Options -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-slate-900 mb-4">2. Background Style</h2>
+                    <div class="flex justify-center flex-wrap gap-4 mb-4">
+                        <label>
+                            <input type="radio" name="backgroundType" value="transparent" class="radio-input sr-only" checked>
+                            <span class="radio-label">None</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="backgroundType" value="color" class="radio-input sr-only">
+                            <span class="radio-label">Color</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="backgroundType" value="image" class="radio-input sr-only">
+                            <span class="radio-label">Image</span>
+                        </label>
+                    </div>
+                    <div class="flex justify-center items-center min-h-[48px]">
+                        <div id="bg-color-controls" class="hidden items-center gap-2">
+                            <input type="color" id="bgColorPicker" value="#BFDBFE" class="h-12 w-64 border-gray-300 rounded-md p-1 cursor-pointer">
+                        </div>
+                        <div id="bg-image-controls" class="hidden">
+                             <input type="file" id="bgImageUpload" class="hidden items-center gap-2" accept="image/*">
+                             <button id="bgUploadBtn" class="btn btn-secondary h-12">
+                                Upload Background
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Image Uploads -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-slate-900 mb-4">3. Add Artwork</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Face Image Card -->
+                        <div class="sub-card space-y-4">
+                            <h3 class="font-semibold text-slate-800 text-center">Front of the Mug</h3>
+                            <div class="flex justify-center flex-wrap gap-4">
+                                <label><input type="radio" name="faceArtType" value="transparent" class="radio-input sr-only" checked><span class="radio-label">None</span></label>
+                                <label><input type="radio" name="faceArtType" value="image" class="radio-input sr-only"><span class="radio-label">Image</span></label>
+                                <label><input type="radio" name="faceArtType" value="text" class="radio-input sr-only"><span class="radio-label">Text</span></label>
+                            </div>
+                            <div id="face-image-controls" class="hidden space-y-3">
+                                <input type="file" id="faceImageInput" class="hidden" accept="image/*">
+                                <button id="uploadFaceBtn" class="btn btn-secondary w-full">Upload</button>
+                                <div class="flex gap-2 justify-center">
+                                    <button id="flipFaceHBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-5 h-5" alt="Flip Horizontal"></button>
+                                    <button id="flipFaceVBtn" class="btn btn-secondary btn-icon" title="Flip Vertical"><img src="https://www.svgrepo.com/download/509932/flip-vertical.svg" class="w-5 h-5" alt="Flip Vertical"></button>
+                                    <button id="rotateFaceLBtn" class="btn btn-secondary btn-icon" title="Rotate Left"><img src="https://www.svgrepo.com/download/501707/rotate-left.svg" class="w-5 h-5" alt="Rotate Left"></button>
+                                    <button id="rotateFaceRBtn" class="btn btn-secondary btn-icon" title="Rotate Right"><img src="https://www.svgrepo.com/download/501709/rotate-right.svg" class="w-5 h-5" alt="Rotate Right"></button>
+                                </div>
+                            </div>
+                             <div id="face-text-controls" class="hidden space-y-3">
+                                <textarea id="faceTextInput" class="textarea-field w-full" rows="3" placeholder="Your text here..."></textarea>
+                                <div class="flex gap-2">
+                                    <select id="faceFontSelect" class="select-field flex-grow"></select>
+                                    <input type="color" id="faceColorPicker" value="#000000" class="h-10 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                </div>
+                                <div class="flex gap-2 justify-center">
+                                    <button id="faceBoldBtn" class="btn btn-secondary btn-icon" title="Bold"><b>B</b></button>
+                                    <button id="faceItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
+                                    <button id="faceUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
+                                    <button id="faceStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Back Image Card -->
+                         <div class="sub-card space-y-4">
+                            <h3 class="font-semibold text-slate-800 text-center">Back of the Mug</h3>
+                            <div class="flex justify-center flex-wrap gap-4">
+                                <label><input type="radio" name="backArtType" value="transparent" class="radio-input sr-only" checked><span class="radio-label">None</span></label>
+                                <label><input type="radio" name="backArtType" value="image" class="radio-input sr-only"><span class="radio-label">Image</span></label>
+                                <label><input type="radio" name="backArtType" value="text" class="radio-input sr-only"><span class="radio-label">Text</span></label>
+                            </div>
+                            <div id="back-image-controls" class="hidden space-y-3">
+                                <input type="file" id="backImageInput" class="hidden" accept="image/*">
+                                <button id="uploadBackBtn" class="btn btn-secondary w-full">Upload</button>
+                                <div class="flex gap-2 justify-center">
+                                    <button id="flipBackHBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-5 h-5" alt="Flip Horizontal"></button>
+                                    <button id="flipBackVBtn" class="btn btn-secondary btn-icon" title="Flip Vertical"><img src="https://www.svgrepo.com/download/509932/flip-vertical.svg" class="w-5 h-5" alt="Flip Vertical"></button>
+                                    <button id="rotateBackLBtn" class="btn btn-secondary btn-icon" title="Rotate Left"><img src="https://www.svgrepo.com/download/501707/rotate-left.svg" class="w-5 h-5" alt="Rotate Left"></button>
+                                    <button id="rotateBackRBtn" class="btn btn-secondary btn-icon" title="Rotate Right"><img src="https://www.svgrepo.com/download/501709/rotate-right.svg" class="w-5 h-5" alt="Rotate Right"></button>
+                                </div>
+                            </div>
+                            <div id="back-text-controls" class="hidden space-y-3">
+                                <textarea id="backTextInput" class="textarea-field w-full" rows="3" placeholder="Your text here..."></textarea>
+                                <div class="flex gap-2">
+                                    <select id="backFontSelect" class="select-field flex-grow"></select>
+                                    <input type="color" id="backColorPicker" value="#000000" class="h-10 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                </div>
+                                <div class="flex gap-2 justify-center">
+                                    <button id="backBoldBtn" class="btn btn-secondary btn-icon" title="Bold"><b>B</b></button>
+                                    <button id="backItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
+                                    <button id="backUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
+                                    <button id="backStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Preview & Download -->
+            <div class="card space-y-6">
+                <h2 class="text-xl font-semibold text-slate-900">4. Preview & Export</h2>
+                <div id="svg-preview" class="border-2 border-dashed border-slate-300 rounded-lg p-4 bg-white w-full overflow-auto">
+                    <div id="svg-container" class="flex justify-center items-center">
+                        <!-- SVG will be injected here -->
+                    </div>
+                </div>
+                <div id="info" class="text-center text-sm text-slate-600 bg-slate-100 p-3 rounded-lg">
+                    Adjust your mug's dimensions to see the template update in real-time.
+                </div>
+                <div class="input-group mb-2">
+                    <label for="exportFormat" class="font-medium text-sm text-slate-700">Export Format</label>
+                    <select id="exportFormat" class="select-field w-full">
+                        <option value="svg" selected>SVG (Vector)</option>
+                        <option value="png">PNG (Image)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="downloadCutoutBtn" class="btn btn-secondary w-full text-lg" disabled>
+                        Download Cutout
+                    </button>
+                    <button id="downloadDesignBtn" class="btn btn-primary w-full text-lg" disabled>
+                        Download Design
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

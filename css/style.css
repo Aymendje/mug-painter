@@ -1,0 +1,79 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc; /* slate-50 */
+}
+.card {
+    background-color: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0; /* slate-200 */
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+}
+.sub-card {
+    background-color: #f8fafc; /* slate-50 */
+    border: 1px solid #e2e8f0; /* slate-200 */
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+.input-field, .textarea-field {
+    background-color: #f8fafc; /* slate-50 */
+    border: 1px solid #cbd5e1; /* slate-300 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-field:focus, .textarea-field:focus {
+    outline: none;
+    border-color: #4f46e5; /* indigo-600 */
+    box-shadow: 0 0 0 2px #c7d2fe; /* indigo-200 */
+}
+.select-field {
+     background-color: #f8fafc; /* slate-50 */
+    border: 1px solid #cbd5e1; /* slate-300 */
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+.btn-icon {
+    padding: 0.75rem;
+}
+.btn-primary {
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #4338ca; /* indigo-700 */
+}
+.btn-secondary {
+    background-color: #f8fafc; /* slate-50 */
+    color: #334155; /* slate-700 */
+    border: 1px solid #cbd5e1; /* slate-300 */
+}
+.btn-secondary:hover {
+    background-color: #f1f5f9; /* slate-100 */
+}
+.radio-label {
+    padding: 0.5rem 1rem;
+    border: 1px solid #e2e8f0; /* slate-200 */
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #475569; /* slate-600 */
+}
+.radio-input:checked + .radio-label {
+    background-color: #e0e7ff; /* indigo-100 */
+    border-color: #4f46e5; /* indigo-600 */
+    color: #4f46e5; /* indigo-600 */
+    font-weight: 600;
+}
