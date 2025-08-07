@@ -103,7 +103,17 @@ function setupInteractionControls() {
     let isLeftMouseDown = false;
     let isRightMouseDown = false;
     
+    // Function to stop rotation animation
+    function stopMugRotation() {
+        if (state.mugMesh) {
+            state.isRotating = false;
+        }
+    }
+    
     dom.threeCanvas.addEventListener('mousedown', (e) => {
+        // Stop rotation on any mouse interaction
+        stopMugRotation();
+        
         if (e.button === 0) { // Left mouse button
             isLeftMouseDown = true;
         } else if (e.button === 2) { // Right mouse button
@@ -151,6 +161,9 @@ function setupInteractionControls() {
     // Add scroll-to-zoom functionality
     dom.threeCanvas.addEventListener('wheel', (e) => {
         e.preventDefault();
+        
+        // Stop rotation on scroll interaction
+        stopMugRotation();
         
         const zoomSpeed = 0.01;
         const delta = e.deltaY * zoomSpeed;
@@ -454,6 +467,20 @@ export async function createMugTexture(svgForDesign) {
     });
 }
 
+// === ROTATION ANIMATION MANAGEMENT ===
+export function startMugRotation() {
+    if (state.mugMesh && state.isCurrentView3D) {
+        state.isRotating = true;
+        state.rotationStartTime = Date.now();
+    }
+}
+
+export function stopMugRotation() {
+    if (state.mugMesh) {
+        state.isRotating = false;
+    }
+}
+
 // === 3D MUG UPDATE ===
 export async function update3DMug() {
     if (!state.isCurrentView3D || !state.scene) {
@@ -526,6 +553,9 @@ export async function update3DMug() {
     });
     
     state.scene.add(state.mugMesh);
+    
+    // Start rotation animation after canvas rebuild
+    startMugRotation();
 }
 
 // === ANIMATION LOOP ===
@@ -533,6 +563,21 @@ export function animate3D() {
     if (!state.isCurrentView3D) return;
     
     state.animationId = requestAnimationFrame(animate3D);
+    
+    // Handle mug rotation animation
+    if (state.isRotating && state.mugMesh && state.rotationStartTime) {
+        const elapsedTime = Date.now() - state.rotationStartTime;
+        const rotationDuration = 10000; // 10 seconds for full revolution
+        const rotationAngle = (elapsedTime / rotationDuration) * Math.PI * 2; // Full circle in radians
+        
+        // Apply rotation around Z-axis
+        state.mugMesh.rotation.y = rotationAngle;
+        
+        // Reset rotation after full circle to avoid precision issues
+        if (elapsedTime >= rotationDuration) {
+            state.rotationStartTime = Date.now();
+        }
+    }
     
     if (state.renderer && state.scene && state.camera) {
         state.renderer.render(state.scene, state.camera);
@@ -601,4 +646,7 @@ export function switch3DView() {
     // Update 3D mug and start animation
     update3DMug();
     animate3D();
+    
+    // Start rotation animation when switching to 3D view
+    startMugRotation();
 }
