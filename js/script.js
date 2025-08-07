@@ -631,7 +631,7 @@ async function generateTemplate() {
     // 1. Get user inputs & dimensions
     const mainHeight = parseFloat(heightInput.value);
     const diameter = parseFloat(diameterInput.value);
-    const areaWidth = parseFloat(handleAreaWidthInput.value) * 1.2;
+    const areaWidth = parseFloat(handleAreaWidthInput.value) * 0.5 * 1.5;
     if (isNaN(mainHeight) || isNaN(diameter) || isNaN(areaWidth) || mainHeight <= 0 || diameter <= 0 || areaWidth <= 0) {
         infoDiv.textContent = 'Please enter valid, positive numbers for all dimensions.';
         svgContainer.innerHTML = '';
