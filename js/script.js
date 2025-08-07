@@ -1025,7 +1025,12 @@ async function generateAndDownloadCutout() {
         pdf.addImage(pngDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
         pdf.save(filename);
     } else { // SVG
-        const pathData = svgForDesign.match(/<path[^>]+d="([^ "]+)"/)[1];
+        const pathMatch = svgForDesign.match(/<path[^>]+d="([^"]+)"/);
+        if (!pathMatch) {
+            console.error('Could not find path data in SVG');
+            return;
+        }
+        const pathData = pathMatch[1];
         const finalMaskSvg = `<svg width="${svgWidth.toFixed(2)}mm" height="${svgHeight.toFixed(2)}mm" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><clipPath id="mugClipPath"><path d="${pathData}" /></clipPath></defs><image href="${pngDataUrl}" x="0" y="0" width="${svgWidth}" height="${svgHeight}" clip-path="url(#mugClipPath)" /></svg>`;
         triggerDownload(finalMaskSvg, filename);
     }
