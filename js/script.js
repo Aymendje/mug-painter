@@ -73,6 +73,12 @@ const includeProjectDataCheckbox = document.getElementById('includeProjectData')
 const loadProjectBtn = document.getElementById('loadProjectBtn');
 const loadProjectInput = document.getElementById('loadProjectInput');
 
+// 3D Controls
+const view2DBtn = document.getElementById('view2DBtn');
+const view3DBtn = document.getElementById('view3DBtn');
+const threeCanvas = document.getElementById('three-canvas');
+const svgPreview = document.getElementById('svg-preview');
+
 // Global variables
 let svgForDesign = '';
 let uploadedFaceImage = null, isFaceFlippedH = false, isFaceFlippedV = false, faceRotation = 0;
@@ -86,6 +92,428 @@ let selectedFaceFont = 'Roboto';
 let selectedBackFont = 'Roboto';
 const fontCache = {};
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Slabo 27px", "Raleway", "PT Sans", "Merriweather", "Lobster", "Pacifico", "Caveat"];
+
+// 3D Scene Variables
+let scene, camera, renderer, mugMesh, controls;
+let isCurrentView3D = false;
+let animationId = null;
+
+// --- 3D Scene Functions ---
+function init3DScene() {
+    // Create scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf8fafc);
+    
+    // Get canvas dimensions
+    const canvasWidth = threeCanvas.clientWidth || 400;
+    const canvasHeight = threeCanvas.clientHeight || 400;
+    
+    // Create camera
+    const aspect = canvasWidth / canvasHeight;
+    camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+    camera.position.set(0, 0, 5);
+    camera.lookAt(0, 0, 0);
+    
+    // Create renderer
+    renderer = new THREE.WebGLRenderer({ 
+        canvas: threeCanvas, 
+        antialias: true,
+        alpha: true
+    });
+    renderer.setSize(canvasWidth, canvasHeight);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    
+    // Add lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
+    
+    // Add basic rotation without OrbitControls
+    let mouseX = 0, mouseY = 0;
+    let isMouseDown = false;
+    
+    threeCanvas.addEventListener('mousedown', (e) => {
+        isMouseDown = true;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+    
+    threeCanvas.addEventListener('mouseup', () => {
+        isMouseDown = false;
+    });
+    
+    threeCanvas.addEventListener('mousemove', (e) => {
+        if (!isMouseDown) return;
+        
+        const deltaX = e.clientX - mouseX;
+        const deltaY = e.clientY - mouseY;
+        
+        if (mugMesh) {
+            mugMesh.rotation.y += deltaX * 0.01;
+            mugMesh.rotation.x += deltaY * 0.01;
+        }
+        
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+    
+    // Handle canvas resize
+    const resizeObserver = new ResizeObserver(() => {
+        if (renderer && camera) {
+            const width = threeCanvas.clientWidth;
+            const height = threeCanvas.clientHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+    });
+    resizeObserver.observe(threeCanvas);
+    
+    // Force initial render
+    renderer.render(scene, camera);
+}
+
+function create3DMugGeometry(height, diameter, handleWidth) {
+    // Convert mm to scene units (scale down more for visibility)
+    const scaleToScene = 0.03;
+    const mugHeight = height * scaleToScene;
+    const mugRadius = (diameter / 2) * scaleToScene;
+    const handleDepth = handleWidth * scaleToScene;
+    
+    // Ceramic thickness (4mm in scene units)
+    const ceramicThickness = 4 * scaleToScene;
+    
+    // Create a proper hollow mug with thick ceramic walls
+    // We'll create the outer wall, inner wall, and bottom separately then merge
+    
+    const outerRadius = mugRadius;
+    const outerTopRadius = mugRadius * 0.9;
+    const innerRadius = mugRadius - ceramicThickness;
+    const innerTopRadius = outerTopRadius - ceramicThickness;
+    
+    // Create outer wall
+    const outerWall = new THREE.CylinderGeometry(
+        outerTopRadius,   // top radius
+        outerRadius,      // bottom radius
+        mugHeight,        // height
+        32, 1, true       // radial segments, height segments, open ended (no caps)
+    );
+    
+    // Create inner wall (reversed normals to face inward)
+    const innerWall = new THREE.CylinderGeometry(
+        innerTopRadius,   // top radius
+        innerRadius,      // bottom radius
+        mugHeight - ceramicThickness, // shorter to not go through bottom
+        32, 1, true       // open ended
+    );
+    
+    // Position inner wall up to create bottom thickness
+    innerWall.translate(0, ceramicThickness / 2, 0);
+    
+    // Create bottom ring (annulus)
+    const bottomGeometry = new THREE.RingGeometry(
+        innerRadius,      // inner radius
+        outerRadius,      // outer radius
+        32               // segments
+    );
+    
+    // Rotate bottom to be horizontal and position at bottom of mug
+    bottomGeometry.rotateX(-Math.PI / 2);
+    bottomGeometry.translate(0, -mugHeight / 2, 0);
+    
+    // Merge all geometries
+    const mergedGeometry = new THREE.BufferGeometry();
+    
+    // Get all vertex data
+    const outerPositions = outerWall.attributes.position.array;
+    const innerPositions = innerWall.attributes.position.array;
+    const bottomPositions = bottomGeometry.attributes.position.array;
+    
+    const outerUVs = outerWall.attributes.uv.array;
+    const innerUVs = innerWall.attributes.uv.array;
+    const bottomUVs = bottomGeometry.attributes.uv.array;
+    
+    const outerIndices = outerWall.index ? outerWall.index.array : [];
+    const innerIndices = innerWall.index ? innerWall.index.array : [];
+    const bottomIndices = bottomGeometry.index ? bottomGeometry.index.array : [];
+    
+    // Combine all positions
+    const totalPositions = new Float32Array(
+        outerPositions.length + innerPositions.length + bottomPositions.length
+    );
+    const totalUVs = new Float32Array(
+        outerUVs.length + innerUVs.length + bottomUVs.length
+    );
+    
+    let offset = 0;
+    totalPositions.set(outerPositions, offset);
+    totalUVs.set(outerUVs, offset / 3 * 2);
+    offset += outerPositions.length;
+    
+    totalPositions.set(innerPositions, offset);
+    totalUVs.set(innerUVs, offset / 3 * 2);
+    offset += innerPositions.length;
+    
+    totalPositions.set(bottomPositions, offset);
+    totalUVs.set(bottomUVs, offset / 3 * 2);
+    
+    // Combine indices with proper offsets
+    const totalIndices = [];
+    let vertexOffset = 0;
+    
+    // Outer wall indices
+    if (outerIndices.length > 0) {
+        for (let i = 0; i < outerIndices.length; i++) {
+            totalIndices.push(outerIndices[i] + vertexOffset);
+        }
+    }
+    vertexOffset += outerPositions.length / 3;
+    
+    // Inner wall indices (reversed to face inward)
+    if (innerIndices.length > 0) {
+        for (let i = 0; i < innerIndices.length; i += 3) {
+            totalIndices.push(innerIndices[i + 2] + vertexOffset);
+            totalIndices.push(innerIndices[i + 1] + vertexOffset);
+            totalIndices.push(innerIndices[i] + vertexOffset);
+        }
+    }
+    vertexOffset += innerPositions.length / 3;
+    
+    // Bottom indices
+    if (bottomIndices.length > 0) {
+        for (let i = 0; i < bottomIndices.length; i++) {
+            totalIndices.push(bottomIndices[i] + vertexOffset);
+        }
+    }
+    
+    // Set geometry attributes
+    mergedGeometry.setAttribute('position', new THREE.BufferAttribute(totalPositions, 3));
+    mergedGeometry.setAttribute('uv', new THREE.BufferAttribute(totalUVs, 2));
+    mergedGeometry.setIndex(totalIndices);
+    mergedGeometry.computeVertexNormals();
+    
+    const bodyGeometry = mergedGeometry;
+    
+    // Create handle using torus geometry for a realistic C-shaped handle
+    const handleOuterRadius = mugHeight / 3.0; // Handle height proportional to mug
+    const handleTubeRadius = Math.max(ceramicThickness, handleDepth * 0.4);  // Handle thickness (at least as thick as ceramic)
+    
+    const handleGeometry = new THREE.TorusGeometry(
+        handleOuterRadius,  // radius of the torus
+        handleTubeRadius,   // tube radius (thickness)
+        8,                  // radial segments
+        16,                 // tubular segments  
+        Math.PI       // arc length (more than half circle for C-shape)
+    );
+    
+    // Position and orient the handle
+    handleGeometry.rotateZ(Math.PI / 2); // Rotate to vertical orientation
+    handleGeometry.rotateY(Math.PI / 2); // Face outward from mug
+    
+    // Position handle at the back where SVG seam meets
+    // In cylindrical UV mapping, the seam is typically at angle 0 (positive X-axis)
+    // But we want the handle at the back (opposite side from the front design)
+    // So we position it at angle PI (negative X-axis)
+    const handleX = 0;
+    console.log("handleX", handleX);
+    const handleY = 0; // Center vertically
+    const handleZ = mugRadius;
+    handleGeometry.translate(handleX, handleY, handleZ);
+    
+    // Create group to hold both geometries
+    const mugGroup = new THREE.Group();
+    
+    // Create meshes
+    const bodyMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const handleMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    
+    const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    const handleMesh = new THREE.Mesh(handleGeometry, handleMaterial);
+    
+    // Add both to group
+    mugGroup.add(bodyMesh);
+    mugGroup.add(handleMesh);
+    
+    return mugGroup;
+}
+
+async function createMugTexture() {
+    console.log('Creating mug texture...');
+    
+    if (!svgForDesign) {
+        console.warn('No SVG design available for texture');
+        return null;
+    }
+    
+    // Create a canvas to render SVG as texture
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size for texture (power of 2 for WebGL)
+    canvas.width = 1024;
+    canvas.height = 512;
+    
+    // Create image from SVG
+    const img = new Image();
+    const svgBlob = new Blob([svgForDesign], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    return new Promise((resolve) => {
+        img.onload = () => {
+            console.log('SVG loaded for texture');
+            
+            // Draw SVG to canvas
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Create Three.js texture
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            
+            URL.revokeObjectURL(url);
+            console.log('Texture created successfully');
+            resolve(texture);
+        };
+        
+        img.onerror = (err) => {
+            console.error('Error loading SVG for texture:', err);
+            URL.revokeObjectURL(url);
+            resolve(null);
+        };
+        
+        img.src = url;
+    });
+}
+
+async function update3DMug() {
+    if (!isCurrentView3D || !scene) {
+        console.log('Not in 3D view or no scene');
+        return;
+    }
+    
+    console.log('Updating 3D mug...');
+    
+    const height = parseFloat(heightInput.value);
+    const diameter = parseFloat(diameterInput.value);
+    const handleWidth = parseFloat(handleAreaWidthInput.value);
+    
+    // Remove existing mug
+    if (mugMesh) {
+        scene.remove(mugMesh);
+        if (mugMesh.geometry) mugMesh.geometry.dispose();
+        if (mugMesh.material) mugMesh.material.dispose();
+    }
+    
+    // Create new mug geometry (returns a Group with body and handle)
+    mugMesh = create3DMugGeometry(height, diameter, handleWidth);
+    
+    // Create texture from current SVG
+    let texture = null;
+    try {
+        texture = await createMugTexture();
+    } catch (err) {
+        console.error('Error creating texture:', err);
+    }
+    
+    // Apply materials to all meshes in the group
+    mugMesh.traverse((child) => {
+        if (child.isMesh) {
+            // Apply texture to body, simple material to handle
+            if (texture && child === mugMesh.children[0]) { // Body mesh (first child)
+                child.material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    map: texture
+                });
+            } else {
+                // Handle or fallback material
+                child.material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff
+                });
+            }
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+    
+    scene.add(mugMesh);
+}
+
+function animate3D() {
+    if (!isCurrentView3D) return;
+    
+    animationId = requestAnimationFrame(animate3D);
+    
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
+}
+
+function switch2DView() {
+    isCurrentView3D = false;
+    
+    // Cancel animation loop
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+    }
+    
+    // Show 2D, hide 3D
+    svgContainer.style.display = 'flex';
+    threeCanvas.classList.add('hidden');
+    
+    // Update button states
+    view2DBtn.classList.remove('btn-secondary');
+    view2DBtn.classList.add('btn-primary');
+    view3DBtn.classList.remove('btn-primary');
+    view3DBtn.classList.add('btn-secondary');
+    
+    // Regenerate 2D template
+    generateTemplate();
+}
+
+function switch3DView() {
+    console.log('Switching to 3D view...');
+    
+    // Check if THREE.js is loaded
+    if (typeof THREE === 'undefined') {
+        console.error('THREE.js is not loaded');
+        alert('3D functionality requires Three.js to be loaded. Please refresh the page.');
+        return;
+    }
+    
+    isCurrentView3D = true;
+    
+    // Initialize 3D scene if not done
+    if (!scene) {
+        console.log('Initializing 3D scene...');
+        init3DScene();
+    }
+    
+    // Hide 2D, show 3D
+    svgContainer.style.display = 'none';
+    threeCanvas.classList.remove('hidden');
+    
+    // Update button states
+    view3DBtn.classList.remove('btn-secondary');
+    view3DBtn.classList.add('btn-primary');
+    view2DBtn.classList.remove('btn-primary');
+    view2DBtn.classList.add('btn-secondary');
+    
+    // Update 3D mug and start animation
+    console.log('Updating 3D mug...');
+    update3DMug();
+    animate3D();
+}
 
 // --- Main Generation Function ---
 async function generateTemplate() {
@@ -197,6 +625,11 @@ async function generateTemplate() {
     infoDiv.innerHTML = `Calculated Circumference: <strong class="text-indigo-600">${width.toFixed(2)} mm</strong><br>Total Template Size: <strong class="text-indigo-600">${width.toFixed(2)} x ${mainHeight.toFixed(2)} mm</strong>`;
     downloadDesignBtn.disabled = false;
     downloadCutoutBtn.disabled = false;
+    
+    // 8. Update 3D view if active
+    if (isCurrentView3D) {
+        update3DMug();
+    }
 }
 
 async function createArtElement(type, x, y, w, h) {
@@ -1017,6 +1450,10 @@ loadProjectInput.addEventListener('change', (e) => {
         reader.readAsText(file);
     }
 });
+
+// 3D view toggle event listeners
+view2DBtn.addEventListener('click', switch2DView);
+view3DBtn.addEventListener('click', switch3DView);
 
 // Pre-fetch all fonts on startup
 prefetchAllFonts();

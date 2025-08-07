@@ -6,6 +6,7 @@
     <title>Mug Painter</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -203,11 +204,18 @@
 
             <!-- Right Column: Preview & Download -->
             <div class="card space-y-6">
-                <h2 class="text-xl font-semibold text-slate-900">4. Preview & Export</h2>
-                <div id="svg-preview" class="border-2 border-dashed border-slate-300 rounded-lg p-4 bg-white w-full overflow-auto">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-slate-900">4. Preview & Export</h2>
+                    <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                        <button id="view2DBtn" class="btn btn-primary btn-sm px-3 py-1 text-sm">2D</button>
+                        <button id="view3DBtn" class="btn btn-secondary btn-sm px-3 py-1 text-sm">3D</button>
+                    </div>
+                </div>
+                <div id="svg-preview" class="border-2 border-dashed border-slate-300 rounded-lg p-4 bg-white w-full overflow-auto relative" style="min-height: 400px;">
                     <div id="svg-container" class="flex justify-center items-center">
                         <!-- SVG will be injected here -->
                     </div>
+                    <canvas id="three-canvas" class="w-full h-full absolute inset-0 hidden"></canvas>
                 </div>
                 <div id="info" class="text-center text-sm text-slate-600 bg-slate-100 p-3 rounded-lg">
                     Adjust your mug's dimensions to see the template update in real-time.

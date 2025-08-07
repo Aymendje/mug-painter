@@ -193,3 +193,10 @@ body {
 .custom-options::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* Small button style for 2D/3D toggle */
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
