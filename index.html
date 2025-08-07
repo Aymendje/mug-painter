@@ -72,11 +72,26 @@
                         <div id="bg-color-controls" class="hidden items-center gap-2">
                             <input type="color" id="bgColorPicker" value="#BFDBFE" class="h-12 w-64 border-gray-300 rounded-md p-1 cursor-pointer">
                         </div>
-                        <div id="bg-image-controls" class="hidden">
-                             <input type="file" id="bgImageUpload" class="hidden items-center gap-2" accept="image/*">
+                        <div id="bg-image-controls" class="hidden flex items-center gap-2">
+                             <input type="file" id="bgImageUpload" class="hidden" accept="image/*">
                              <button id="bgUploadBtn" class="btn btn-secondary h-12">
                                 Upload Background
                             </button>
+                            <select id="bgImageStyle" class="select-field h-12">
+                                <option value="fill" selected>Fill</option>
+                                <option value="fit">Fit</option>
+                                <option value="stretch">Stretch</option>
+                                <option value="tile">Tile</option>
+                                <option value="center">Center</option>
+                            </select>
+                            <select id="bgImageSize" class="select-field h-12">
+                                <option value="original" selected>Original</option>
+                                <option value="xs">Extra Small</option>
+                                <option value="s">Small</option>
+                                <option value="m">Medium</option>
+                                <option value="l">Large</option>
+                                <option value="xl">Extra Large</option>
+                            </select>
                         </div>
                     </div>
                 </div>

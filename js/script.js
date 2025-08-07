@@ -41,6 +41,8 @@ const bgColorPicker = document.getElementById('bgColorPicker');
 const bgImageControls = document.getElementById('bg-image-controls');
 const bgUploadBtn = document.getElementById('bgUploadBtn');
 const bgImageUploadInput = document.getElementById('bgImageUpload');
+const bgImageStyle = document.getElementById('bgImageStyle');
+const bgImageSize = document.getElementById('bgImageSize');
 const bgNoneControls = document.getElementById('bg-none-controls');
 
 // Export Controls
@@ -93,10 +95,55 @@ async function generateTemplate() {
     let mainFillForPreview = '', mainFillForDownload = 'fill="none"';
 
     if (selectedBgType === 'image' && uploadedBgImageData) {
-        const bgPattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${width.toFixed(2)}" height="${mainHeight.toFixed(2)}"><image href="${uploadedBgImageData}" x="0" y="0" width="${width.toFixed(2)}" height="${mainHeight.toFixed(2)}" preserveAspectRatio="xMidYMid slice"/></pattern>`;
-        defs += bgPattern;
-        mainFillForPreview = 'fill="url(#bgPattern)"';
-        mainFillForDownload = 'fill="url(#bgPattern)"';
+        const image = new Image();
+        image.src = uploadedBgImageData;
+        await new Promise(resolve => { image.onload = resolve; });
+
+        const style = bgImageStyle.value;
+        const size = bgImageSize.value;
+        let imageTag = '';
+
+        let w = image.width;
+        let h = image.height;
+
+        switch (size) {
+            case 'xs': h = mainHeight / 8; w = image.width * (h / image.height); break;
+            case 's': h = mainHeight / 4; w = image.width * (h / image.height); break;
+            case 'm': h = mainHeight / 2; w = image.width * (h / image.height); break;
+            case 'l': h = mainHeight * 0.9; w = image.width * (h / image.height); break;
+            case 'xl': h = mainHeight * 2; w = image.width * (h / image.height); break;
+        }
+
+        if (style === 'tile') {
+            const pattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${w}" height="${h}"><image href="${uploadedBgImageData}" x="0" y="0" width="${w}" height="${h}"/></pattern>`;
+            defs += pattern;
+            mainFillForPreview = 'fill="url(#bgPattern)"';
+            mainFillForDownload = 'fill="url(#bgPattern)"';
+        } else {
+            let x = 0, y = 0;
+            let imgWidth = w, imgHeight = h;
+            let preserveAspectRatio = 'none';
+            if (style === 'fit') {
+                preserveAspectRatio = 'xMidYMid meet';
+                imgWidth = width;
+                imgHeight = mainHeight;
+            } else if (style === 'fill') {
+                preserveAspectRatio = 'xMidYMid slice';
+                imgWidth = width;
+                imgHeight = mainHeight;
+            } else if (style === 'center') {
+                x = (width - w) / 2;
+                y = (mainHeight - h) / 2;
+            } else if (style === 'stretch') {
+                imgWidth = width;
+                imgHeight = mainHeight;
+            }
+            imageTag = `<image href="${uploadedBgImageData}" x="${x}" y="${y}" width="${imgWidth}" height="${imgHeight}" preserveAspectRatio="${preserveAspectRatio}"/>`;
+            const bgPattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${width.toFixed(2)}" height="${mainHeight.toFixed(2)}">${imageTag}</pattern>`;
+            defs += bgPattern;
+            mainFillForPreview = 'fill="url(#bgPattern)"';
+            mainFillForDownload = 'fill="url(#bgPattern)"';
+        }
     } else if (selectedBgType === 'color') {
         mainFillForPreview = `fill="${bgColorPicker.value}"`;
         mainFillForDownload = `fill="${bgColorPicker.value}"`;
@@ -332,6 +379,13 @@ function updateControlsVisibility() {
     bgNoneControls.classList.toggle('hidden', selectedBgType !== 'transparent');
     bgColorControls.classList.toggle('hidden', selectedBgType !== 'color');
     bgImageControls.classList.toggle('hidden', selectedBgType !== 'image');
+
+    if (selectedBgType === 'image') {
+        const selectedBgStyle = bgImageStyle.value;
+        bgImageSize.classList.toggle('hidden', selectedBgStyle !== 'tile' && selectedBgStyle !== 'center');
+    } else {
+        bgImageSize.classList.add('hidden');
+    }
     
     const selectedFaceType = document.querySelector('input[name="faceArtType"]:checked').value;
     faceImageControls.classList.toggle('hidden', selectedFaceType !== 'image');
@@ -374,6 +428,8 @@ backStrikethroughBtn.addEventListener('click', () => { isBackStrikethrough = !is
 
 bgUploadBtn.addEventListener('click', () => bgImageUploadInput.click());
 bgImageUploadInput.addEventListener('change', (e) => handleImageUpload(e, 'bg'));
+bgImageStyle.addEventListener('change', updateControlsVisibility);
+bgImageSize.addEventListener('change', generateTemplate);
 
 downloadDesignBtn.addEventListener('click', () => {
     const format = exportFormatSelect.value;
