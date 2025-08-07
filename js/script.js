@@ -496,19 +496,19 @@ async function update3DMug() {
         if (child.isMesh) {
             // Apply texture to body, simple material to handle
             if (texture && child === mugMesh.children[0]) { // Body mesh (first child)
-                child.material = new THREE.MeshBasicMaterial({
+                child.material = new THREE.MeshLambertMaterial({
                     color: 0xffffff,
                     map: texture
                 });
             } else {
                 // Handle or fallback material
-                child.material = new THREE.MeshBasicMaterial({
+                child.material = new THREE.MeshLambertMaterial({
                     color: 0xffffff
                 });
             }
-            // No shadows
-            child.castShadow = false;
-            child.receiveShadow = false;
+            // Enable shadows for realistic appearance
+            child.castShadow = true;
+            child.receiveShadow = true;
         }
     });
     
