@@ -383,6 +383,21 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     const handleZ = mugRadius - ceramicThickness;
     handleGeometry.translate(handleX, handleY, handleZ);
     
+    // Create mug lip (torus at the top bridging outer and inner walls)
+    const lipMajorRadius = (outerTopRadius + innerTopRadius) / 2; // Middle between outer and inner at top
+    const lipMinorRadius = (outerTopRadius - innerTopRadius) / 2; // Half the gap between outer and inner
+    
+    const lipGeometry = new THREE.TorusGeometry(
+        lipMajorRadius,     // major radius (distance from center of mug to center of torus tube)
+        lipMinorRadius,     // minor radius (thickness of the torus tube)
+        8,                  // radial segments
+        32                  // tubular segments
+    );
+    
+    // Position the lip at the top of the mug
+    lipGeometry.rotateX(Math.PI / 2); // Face outward from mug
+    lipGeometry.translate(0, mugHeight / 2, 0);
+    
     // Create group to hold all geometries
     const mugGroup = new THREE.Group();
     
@@ -390,20 +405,24 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     const outerWallMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
     const innerPartsMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
     const handleMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const lipMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
     
     const outerWallMesh = new THREE.Mesh(outerWallGeometry, outerWallMaterial);
     const innerPartsMesh = new THREE.Mesh(innerPartsGeometry, innerPartsMaterial);
     const handleMesh = new THREE.Mesh(handleGeometry, handleMaterial);
+    const lipMesh = new THREE.Mesh(lipGeometry, lipMaterial);
     
     // Mark meshes for identification
     outerWallMesh.name = 'outerWall';
     innerPartsMesh.name = 'innerParts';
     handleMesh.name = 'handle';
+    lipMesh.name = 'lip';
     
     // Add all to group
     mugGroup.add(outerWallMesh);
     mugGroup.add(innerPartsMesh);
     mugGroup.add(handleMesh);
+    mugGroup.add(lipMesh);
     
     return mugGroup;
 }
@@ -506,6 +525,14 @@ async function update3DMug() {
                     color: 0xffffff
                 });
                 // Inner parts cast shadows on each other but don't cast external shadows
+                child.castShadow = true;
+                child.receiveShadow = true;
+            } else if (child.name === 'lip') {
+                // Lip gets plain white material (no texture)
+                child.material = new THREE.MeshLambertMaterial({
+                    color: 0xffffff
+                });
+                // Lip casts and receives shadows
                 child.castShadow = true;
                 child.receiveShadow = true;
             } else {
