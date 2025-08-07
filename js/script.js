@@ -157,12 +157,26 @@ function init3DScene() {
     });
     renderer.setSize(canvasWidth, canvasHeight);
     renderer.setPixelRatio(window.devicePixelRatio || 1);
-    // Disable shadows for cleaner look
-    renderer.shadowMap.enabled = false;
+    // Enable shadows for realistic look
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     
-    // Add simplified lighting (no shadows)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Full ambient lighting
+    // Add realistic lighting with shadows
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.left = -10;
+    directionalLight.shadow.camera.right = 10;
+    directionalLight.shadow.camera.top = 10;
+    directionalLight.shadow.camera.bottom = -10;
+    scene.add(directionalLight);
     
     // Add basic rotation without OrbitControls
     let mouseX = 0, mouseY = 0;
@@ -535,8 +549,6 @@ function switch2DView() {
 }
 
 function switch3DView() {
-    console.log('Switching to 3D view...');
-    
     // Check if THREE.js is loaded
     if (typeof THREE === 'undefined') {
         console.error('THREE.js is not loaded');
@@ -546,11 +558,23 @@ function switch3DView() {
     
     isCurrentView3D = true;
     
-    // Initialize 3D scene if not done
-    if (!scene) {
-        console.log('Initializing 3D scene...');
-        init3DScene();
+    // Always reinitialize 3D scene to avoid state issues
+    if (scene) {
+        // Clean up existing scene
+        if (mugMesh) {
+            scene.remove(mugMesh);
+        }
+        if (renderer) {
+            renderer.dispose();
+        }
+        scene = null;
+        camera = null;
+        renderer = null;
+        mugMesh = null;
     }
+    
+    // Initialize fresh 3D scene
+    init3DScene();
     
     // Hide 2D, show 3D
     svgContainer.style.display = 'none';
@@ -563,7 +587,6 @@ function switch3DView() {
     view2DBtn.classList.add('btn-secondary');
     
     // Update 3D mug and start animation
-    console.log('Updating 3D mug...');
     update3DMug();
     animate3D();
 }
