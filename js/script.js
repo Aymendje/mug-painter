@@ -435,6 +435,13 @@ async function createMugTexture() {
         return null;
     }
     
+    // Create a clean version of SVG without main template path stroke for 3D texture
+    // Only remove stroke from the main path element (template outline), keep text and other elements intact
+    const svg3D = svgForDesign.replace(
+        /stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/g,
+        'stroke="none"'
+    );
+    
     // Create a canvas to render SVG as texture
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -445,7 +452,7 @@ async function createMugTexture() {
     
     // Create image from SVG
     const img = new Image();
-    const svgBlob = new Blob([svgForDesign], { type: 'image/svg+xml;charset=utf-8' });
+    const svgBlob = new Blob([svg3D], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     
     return new Promise((resolve) => {
