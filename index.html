@@ -122,7 +122,15 @@
                              <div id="face-text-controls" class="hidden space-y-3">
                                 <textarea id="faceTextInput" class="textarea-field w-full" rows="3" placeholder="Your text here..."></textarea>
                                 <div class="flex gap-2">
-                                    <select id="faceFontSelect" class="select-field flex-grow"></select>
+                                    <div class="custom-select flex-grow" id="faceFontSelect">
+                                        <div class="custom-select-trigger">
+                                            <span>Roboto</span>
+                                            <div class="arrow">▼</div>
+                                        </div>
+                                        <div class="custom-options">
+                                            <!-- Options will be populated by JavaScript -->
+                                        </div>
+                                    </div>
                                     <input type="color" id="faceColorPicker" value="#000000" class="h-10 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
                                 </div>
                                 <div class="flex gap-2 justify-center">
@@ -159,7 +167,15 @@
                             <div id="back-text-controls" class="hidden space-y-3">
                                 <textarea id="backTextInput" class="textarea-field w-full" rows="3" placeholder="Your text here..."></textarea>
                                 <div class="flex gap-2">
-                                    <select id="backFontSelect" class="select-field flex-grow"></select>
+                                    <div class="custom-select flex-grow" id="backFontSelect">
+                                        <div class="custom-select-trigger">
+                                            <span>Roboto</span>
+                                            <div class="arrow">▼</div>
+                                        </div>
+                                        <div class="custom-options">
+                                            <!-- Options will be populated by JavaScript -->
+                                        </div>
+                                    </div>
                                     <input type="color" id="backColorPicker" value="#000000" class="h-10 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
                                 </div>
                                 <div class="flex gap-2 justify-center">

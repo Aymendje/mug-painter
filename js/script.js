@@ -18,6 +18,9 @@ const rotateFaceRBtn = document.getElementById('rotateFaceRBtn');
 const faceTextControls = document.getElementById('face-text-controls');
 const faceTextInput = document.getElementById('faceTextInput');
 const faceFontSelect = document.getElementById('faceFontSelect');
+const faceFontTrigger = faceFontSelect.querySelector('.custom-select-trigger');
+const faceFontOptions = faceFontSelect.querySelector('.custom-options');
+const faceFontText = faceFontTrigger.querySelector('span');
 const faceColorPicker = document.getElementById('faceColorPicker');
 const faceBoldBtn = document.getElementById('faceBoldBtn');
 const faceItalicBtn = document.getElementById('faceItalicBtn');
@@ -39,6 +42,9 @@ const rotateBackRBtn = document.getElementById('rotateBackRBtn');
 const backTextControls = document.getElementById('back-text-controls');
 const backTextInput = document.getElementById('backTextInput');
 const backFontSelect = document.getElementById('backFontSelect');
+const backFontTrigger = backFontSelect.querySelector('.custom-select-trigger');
+const backFontOptions = backFontSelect.querySelector('.custom-options');
+const backFontText = backFontTrigger.querySelector('span');
 const backColorPicker = document.getElementById('backColorPicker');
 const backBoldBtn = document.getElementById('backBoldBtn');
 const backItalicBtn = document.getElementById('backItalicBtn');
@@ -72,6 +78,9 @@ let uploadedBgImageData = null;
 // Text formatting states
 let isFaceBold = false, isFaceItalic = false, isFaceUnderline = false, isFaceStrikethrough = false, isFaceContour = false;
 let isBackBold = false, isBackItalic = false, isBackUnderline = false, isBackStrikethrough = false, isBackContour = false;
+// Font selection values
+let selectedFaceFont = 'Roboto';
+let selectedBackFont = 'Roboto';
 const fontCache = {};
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Slabo 27px", "Raleway", "PT Sans", "Merriweather", "Lobster", "Pacifico", "Caveat"];
 
@@ -200,7 +209,7 @@ async function createArtElement(type, x, y, w, h) {
     if (artType === 'text') {
         const text = type === 'face' ? faceTextInput.value : backTextInput.value;
         if (!text.trim()) return '';
-        const font = type === 'face' ? faceFontSelect.value : backFontSelect.value;
+        const font = type === 'face' ? selectedFaceFont : selectedBackFont;
         const color = type === 'face' ? faceColorPicker.value : backColorPicker.value;
         
         // Get formatting states
@@ -278,8 +287,8 @@ async function getFontDataURL(fontFamily) {
 
 async function loadAndEmbedFonts() {
     const fontsToLoad = new Set();
-    if (document.querySelector('input[name="faceArtType"]:checked').value === 'text' && faceTextInput.value.trim()) fontsToLoad.add(faceFontSelect.value);
-    if (document.querySelector('input[name="backArtType"]:checked').value === 'text' && backTextInput.value.trim()) fontsToLoad.add(backFontSelect.value);
+    if (document.querySelector('input[name="faceArtType"]:checked').value === 'text' && faceTextInput.value.trim()) fontsToLoad.add(selectedFaceFont);
+    if (document.querySelector('input[name="backArtType"]:checked').value === 'text' && backTextInput.value.trim()) fontsToLoad.add(selectedBackFont);
     if (fontsToLoad.size === 0) return '';
 
     const stylePromises = Array.from(fontsToLoad).map(async font => {
@@ -549,7 +558,7 @@ function updateControlsVisibility() {
 const allInputs = [projectNameInput, heightInput, diameterInput, handleAreaWidthInput, bgColorPicker, exportFormatSelect, faceTextInput, faceColorPicker, faceContourColorPicker, backTextInput, backColorPicker, backContourColorPicker];
 allInputs.forEach(input => input.addEventListener('input', generateTemplate));
 
-[faceFontSelect, backFontSelect].forEach(sel => sel.addEventListener('change', generateTemplate));
+// Font selection now handled by custom dropdowns
 
 projectNameInput.addEventListener('input', function() { this.value = this.value.replace(/[^a-zA-Z0-9_-]/g, ''); });
 
@@ -609,31 +618,165 @@ function prefetchAllFonts() {
     });
 }
 
-// Add font preloading and styling
-function addFontPreloading() {
-    const fontLinks = googleFonts.map(font => 
-        `@import url('https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;700&display=swap');`
-    ).join('\n');
+// Custom dropdown functionality
+class CustomSelect {
+    constructor(element, initialValue, onChange) {
+        this.element = element;
+        this.trigger = element.querySelector('.custom-select-trigger');
+        this.options = element.querySelector('.custom-options');
+        this.textElement = this.trigger.querySelector('span');
+        this.isOpen = false;
+        this.selectedValue = initialValue;
+        this.onChange = onChange;
+        
+        this.init();
+    }
     
-    const style = document.createElement('style');
-    style.innerHTML = `
-        ${fontLinks}
-        ${googleFonts.map(font => `.font-option-${font.replace(/[^a-zA-Z0-9]/g, '')} { font-family: "${font}"; }`).join('\n')}
-    `;
-    document.head.appendChild(style);
+    init() {
+        // Populate options
+        this.populateOptions();
+        
+        // Set initial value
+        this.setValue(this.selectedValue);
+        
+        // Event listeners
+        this.trigger.addEventListener('click', () => this.toggle());
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.element.contains(e.target)) {
+                this.close();
+            }
+        });
+        
+        // Keyboard support
+        this.element.addEventListener('keydown', (e) => this.handleKeydown(e));
+    }
+    
+    populateOptions() {
+        this.options.innerHTML = '';
+        googleFonts.forEach(font => {
+            const option = document.createElement('div');
+            option.className = 'custom-option';
+            option.textContent = font;
+            option.style.fontFamily = `"${font}", sans-serif`;
+            option.dataset.value = font;
+            
+            option.addEventListener('click', () => {
+                this.selectOption(font);
+            });
+            
+            this.options.appendChild(option);
+        });
+    }
+    
+    toggle() {
+        if (this.isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+    
+    open() {
+        this.isOpen = true;
+        this.trigger.classList.add('open');
+        this.options.classList.add('open');
+        this.updateSelectedOption();
+    }
+    
+    close() {
+        this.isOpen = false;
+        this.trigger.classList.remove('open');
+        this.options.classList.remove('open');
+    }
+    
+    setValue(value) {
+        this.selectedValue = value;
+        this.textElement.textContent = value;
+        this.textElement.style.fontFamily = `"${value}", sans-serif`;
+        this.updateSelectedOption();
+    }
+    
+    selectOption(value) {
+        this.setValue(value);
+        this.close();
+        if (this.onChange) {
+            this.onChange(value);
+        }
+    }
+    
+    updateSelectedOption() {
+        this.options.querySelectorAll('.custom-option').forEach(option => {
+            option.classList.toggle('selected', option.dataset.value === this.selectedValue);
+        });
+    }
+    
+    handleKeydown(e) {
+        if (!this.isOpen && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            this.open();
+            return;
+        }
+        
+        if (this.isOpen) {
+            switch (e.key) {
+                case 'Escape':
+                    e.preventDefault();
+                    this.close();
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.navigateOptions(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.navigateOptions(-1);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    const focused = this.options.querySelector('.custom-option:focus');
+                    if (focused) {
+                        this.selectOption(focused.dataset.value);
+                    }
+                    break;
+            }
+        }
+    }
+    
+    navigateOptions(direction) {
+        const options = Array.from(this.options.querySelectorAll('.custom-option'));
+        const currentIndex = options.findIndex(opt => opt.classList.contains('selected'));
+        const newIndex = Math.max(0, Math.min(options.length - 1, currentIndex + direction));
+        
+        options[newIndex].focus();
+    }
 }
 
-addFontPreloading();
+// Load Google Fonts
+function loadGoogleFonts() {
+    googleFonts.forEach(font => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;700&display=swap`;
+        document.head.appendChild(link);
+    });
+}
 
-googleFonts.forEach(font => {
-    const option1 = new Option(font, font);
-    const option2 = new Option(font, font);
-    const className = `font-option-${font.replace(/[^a-zA-Z0-9]/g, '')}`;
-    option1.className = className;
-    option2.className = className;
-    faceFontSelect.add(option1);
-    backFontSelect.add(option2);
-});
+loadGoogleFonts();
+
+// Initialize custom dropdowns
+setTimeout(() => {
+    const faceDropdown = new CustomSelect(faceFontSelect, selectedFaceFont, (value) => {
+        selectedFaceFont = value;
+        generateTemplate();
+    });
+    
+    const backDropdown = new CustomSelect(backFontSelect, selectedBackFont, (value) => {
+        selectedBackFont = value;
+        generateTemplate();
+    });
+}, 500); // Wait for fonts to start loading
 
 // Pre-fetch all fonts on startup
 prefetchAllFonts();
