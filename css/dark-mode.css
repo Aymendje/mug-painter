@@ -210,3 +210,12 @@ body.dark {
 .dark .font-bold {
     color: #f8fafc; /* slate-50 */
 }
+
+/* Dark mode cutout button checkbox */
+.dark #downloadCutoutBtn label span {
+    color: #cbd5e1; /* slate-300 */
+}
+
+.dark #downloadCutoutBtn:hover label span {
+    color: #e2e8f0; /* slate-200 */
+}

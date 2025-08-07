@@ -121,17 +121,53 @@ export async function renderAndDownloadPDF(svgString, filename) {
     pdf.save(filename);
 }
 
+// === EXTERIOR-ONLY SVG CREATION ===
+function createExteriorOnlySVG() {
+    // Extract the main path (exterior outline) from the original SVG
+    const pathMatch = state.svgForDesign.match(/<path[^>]+d="([^"]+)"[^>]*>/);
+    if (!pathMatch) {
+        console.error('Could not find main path in SVG');
+        return state.svgForDesign; // Fallback to full SVG
+    }
+    
+    // Get SVG dimensions and viewBox
+    const widthMatch = state.svgForDesign.match(/width="([^"]+)"/);
+    const heightMatch = state.svgForDesign.match(/height="([^"]+)"/);
+    const viewBoxMatch = state.svgForDesign.match(/viewBox="([^"]+)"/);
+    
+    const width = widthMatch ? widthMatch[1] : '800';
+    const height = heightMatch ? heightMatch[1] : '300';
+    const viewBox = viewBoxMatch ? viewBoxMatch[1] : `0 0 ${parseFloat(width)} ${parseFloat(height)}`;
+    
+    // Create a minimal SVG with only the exterior path on white background
+    const exteriorOnlySVG = `<svg width="${width}" height="${height}" viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg" style="background-color: white;">
+        <path d="${pathMatch[1]}" fill="black" stroke="none"/>
+    </svg>`;
+    
+    return exteriorOnlySVG;
+}
+
 // === CUTOUT GENERATION AND DOWNLOAD ===
 export async function generateAndDownloadCutout() {
     if (!state.svgForDesign) return;
     
-    // Create version with white background for processing
-    const designWithWhiteBg = state.svgForDesign.replace('<svg', '<svg style="background-color: white;"');
+    // Check if exterior-only mode is enabled
+    const exteriorOnlyMode = document.getElementById('exteriorOnlyMode')?.checked || false;
+    
+    let svgForCutout;
+    
+    if (exteriorOnlyMode) {
+        // Extract only the main path (exterior outline) from the SVG
+        svgForCutout = createExteriorOnlySVG();
+    } else {
+        // Create version with white background for processing (full cutout)
+        svgForCutout = state.svgForDesign.replace('<svg', '<svg style="background-color: white;"');
+    }
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    const svgBlob = new Blob([designWithWhiteBg], { type: 'image/svg+xml;charset=utf-8' });
+    const svgBlob = new Blob([svgForCutout], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     await new Promise((resolve, reject) => {
@@ -171,7 +207,8 @@ export async function generateAndDownloadCutout() {
     const pngDataUrl = canvas.toDataURL('image/png');
     const format = dom.exportFormatSelect.value;
     const filenameBase = dom.projectNameInput.value.replace(/[^a-zA-Z0-9_-]/g, '') || 'mug-template';
-    const filename = `${filenameBase}_cutout.${format}`;
+    const cutoutType = exteriorOnlyMode ? 'exterior' : 'cutout';
+    const filename = `${filenameBase}_${cutoutType}.${format}`;
 
     if (format === 'png') {
         // Direct PNG download
