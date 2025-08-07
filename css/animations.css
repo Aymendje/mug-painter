@@ -1,0 +1,15 @@
+/* Animation styles */
+
+/* 3D Mug rotation animation */
+@keyframes mugRotate {
+    0% { transform: rotateZ(0deg); }
+    100% { transform: rotateZ(360deg); }
+}
+
+.mug-rotating {
+    animation: mugRotate 5s linear infinite;
+}
+
+.mug-stopped {
+    animation: none;
+}
