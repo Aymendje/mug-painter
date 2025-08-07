@@ -233,7 +233,7 @@ async function createArtElement(type, x, y, w, h) {
         tempSvg.style.position = 'absolute'; tempSvg.style.visibility = 'hidden';
         const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
         textNode.setAttribute('font-family', `"${font}"`);
-        textNode.setAttribute('font-size', '100');
+        textNode.setAttribute('font-size', '100'); // Large size for accurate measurement
         textNode.setAttribute('font-weight', fontWeight);
         textNode.setAttribute('font-style', fontStyle);
         lines.forEach((line, i) => {
@@ -250,8 +250,6 @@ async function createArtElement(type, x, y, w, h) {
         const scale = Math.min(w / bbox.width, h / bbox.height);
         const finalFontSize = 100 * scale;
         const transform = `translate(${x + w / 2}, ${y + h / 2})`;
-        
-        // Create text content for reuse
         const textContent = lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('');
         const textAttributes = `x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" dominant-baseline="middle" text-anchor="middle" transform="${transform}"`;
         
@@ -766,16 +764,22 @@ function loadGoogleFonts() {
 loadGoogleFonts();
 
 // Initialize custom dropdowns
+let dropdownsInitialized = false;
 setTimeout(() => {
     const faceDropdown = new CustomSelect(faceFontSelect, selectedFaceFont, (value) => {
         selectedFaceFont = value;
-        generateTemplate();
+        if (dropdownsInitialized) generateTemplate();
     });
     
     const backDropdown = new CustomSelect(backFontSelect, selectedBackFont, (value) => {
         selectedBackFont = value;
-        generateTemplate();
+        if (dropdownsInitialized) generateTemplate();
     });
+    
+    dropdownsInitialized = true;
+    
+    // Generate initial template after dropdowns are ready
+    generateTemplate();
 }, 500); // Wait for fonts to start loading
 
 // Pre-fetch all fonts on startup
