@@ -5,6 +5,7 @@
 
 ### User Experience Fixes
 - [ ] **Popular Mug Size Presets** - Add quick buttons for 10oz, 12oz, and 15oz standard mug dimensions
+- [ ] **Dark Mode Toggle** - Implement dark theme with proper contrast and 3D background adaptation
 - [ ] **Touch Controls** - Enhance 3D navigation for touch devices with proper gesture support
 - [ ] **Keyboard Shortcuts** - Add common shortcuts (Ctrl+S for export, Ctrl+O for load)
 - [ ] **Undo/Redo System** - Implement basic undo/redo for design changes
