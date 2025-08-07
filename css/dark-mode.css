@@ -1,0 +1,143 @@
+/* Dark mode styles */
+
+/* Base dark mode */
+body.dark {
+    background-color: #1e293b; /* slate-800 */
+    color: #f8fafc; /* slate-50 */
+}
+
+/* Dark mode cards */
+.dark .card {
+    background-color: #334155; /* slate-700 */
+    border-color: #64748b; /* slate-500 */
+}
+
+.dark .sub-card {
+    background-color: #475569; /* slate-600 */
+    border-color: #64748b; /* slate-500 */
+}
+
+/* Dark mode form inputs */
+.dark .input-field,
+.dark .textarea-field,
+.dark .select-field {
+    background-color: #475569; /* slate-600 */
+    border-color: #64748b; /* slate-500 */
+    color: #f8fafc; /* slate-50 */
+}
+
+.dark .input-field:focus,
+.dark .textarea-field:focus {
+    border-color: #818cf8; /* indigo-400 */
+    box-shadow: 0 0 0 2px #4338ca; /* indigo-700 */
+}
+
+/* Dark mode buttons */
+.dark .btn-secondary {
+    background-color: #475569; /* slate-600 */
+    color: #f8fafc; /* slate-50 */
+    border-color: #64748b; /* slate-500 */
+}
+
+.dark .btn-secondary:hover {
+    background-color: #64748b; /* slate-500 */
+}
+
+/* Dark mode radio labels */
+.dark .radio-label {
+    background-color: #475569; /* slate-600 */
+    border-color: #64748b; /* slate-500 */
+    color: #e2e8f0; /* slate-200 */
+}
+
+.dark .radio-input:checked + .radio-label {
+    background-color: #4338ca; /* indigo-700 */
+    border-color: #818cf8; /* indigo-400 */
+    color: #c7d2fe; /* indigo-200 */
+}
+
+/* Dark mode custom select */
+.dark .custom-select-trigger {
+    background-color: #475569; /* slate-600 */
+    border-color: #64748b; /* slate-500 */
+    color: #f8fafc; /* slate-50 */
+}
+
+.dark .custom-select-trigger:hover {
+    border-color: #94a3b8; /* slate-400 */
+}
+
+.dark .custom-select-trigger.open {
+    border-color: #818cf8; /* indigo-400 */
+    box-shadow: 0 0 0 2px #4338ca; /* indigo-700 */
+}
+
+.dark .custom-options {
+    background-color: #475569; /* slate-600 */
+    border-color: #64748b; /* slate-500 */
+}
+
+.dark .custom-option {
+    color: #f8fafc; /* slate-50 */
+    border-bottom-color: #64748b; /* slate-500 */
+}
+
+.dark .custom-option:hover {
+    background-color: #64748b; /* slate-500 */
+}
+
+.dark .custom-option.selected {
+    background-color: #4338ca; /* indigo-700 */
+    color: #c7d2fe; /* indigo-200 */
+}
+
+.dark .custom-option.selected:hover {
+    background-color: #4f46e5; /* indigo-600 */
+}
+
+/* Dark mode scrollbar */
+.dark .custom-options::-webkit-scrollbar-track {
+    background: #64748b; /* slate-500 */
+}
+
+.dark .custom-options::-webkit-scrollbar-thumb {
+    background: #94a3b8; /* slate-400 */
+}
+
+.dark .custom-options::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1; /* slate-300 */
+}
+
+/* Dark mode preview container */
+.dark #svg-preview {
+    border-color: #64748b; /* slate-500 */
+    background-color: #334155; /* slate-700 */
+}
+
+/* Dark mode info box */
+.dark #info {
+    background-color: #475569; /* slate-600 */
+    color: #e2e8f0; /* slate-200 */
+}
+
+/* Dark mode checkerboard (for transparency preview) */
+.dark .checkerboard {
+    background-image: linear-gradient(45deg, #64748b 25%, transparent 25%), linear-gradient(-45deg, #64748b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #64748b 75%), linear-gradient(-45deg, transparent 75%, #64748b 75%);
+}
+
+/* Dark mode toggle button */
+#darkModeToggle {
+    color: #64748b; /* slate-500 */
+}
+
+.dark #darkModeToggle {
+    color: #e2e8f0; /* slate-200 */
+}
+
+#darkModeToggle:hover {
+    background-color: #f1f5f9; /* slate-100 */
+}
+
+.dark #darkModeToggle:hover {
+    background-color: #475569; /* slate-600 */
+}

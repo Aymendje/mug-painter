@@ -41,8 +41,34 @@ function updateControlsVisibility() {
     generateTemplate();
 }
 
+// === DARK MODE FUNCTIONS ===
+function initializeDarkMode() {
+    // Check for saved theme preference or default to 'light' mode
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    }
+}
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+    
+    // Save the current theme to localStorage
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
 // === EVENT LISTENER SETUP ===
 export function setupEventListeners() {
+    // === DARK MODE INITIALIZATION AND TOGGLE ===
+    initializeDarkMode();
+    
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', toggleDarkMode);
+    }
+
     // === DIMENSION AND INPUT LISTENERS ===
     const allInputs = [
         dom.projectNameInput, dom.heightInput, dom.diameterInput, dom.handleAreaWidthInput, 

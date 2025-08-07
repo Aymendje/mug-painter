@@ -98,10 +98,17 @@ export function init3DScene() {
 
 // === 3D INTERACTION CONTROLS ===
 function setupInteractionControls() {
-    // Add basic rotation and camera movement
+    // Mouse interaction variables
     let mouseX = 0, mouseY = 0;
     let isLeftMouseDown = false;
     let isRightMouseDown = false;
+    
+    // Touch interaction variables
+    let touches = [];
+    let lastPinchDistance = 0;
+    let isPinching = false;
+    let isTouching = false;
+    let lastTouchCenter = { x: 0, y: 0 };
     
     // Function to stop rotation animation
     function stopMugRotation() {
@@ -110,6 +117,22 @@ function setupInteractionControls() {
         }
     }
     
+    // Helper function to get touch distance for pinch gestures
+    function getTouchDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    // Helper function to get center point of two touches
+    function getTouchCenter(touch1, touch2) {
+        return {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+        };
+    }
+    
+    // === MOUSE EVENTS ===
     dom.threeCanvas.addEventListener('mousedown', (e) => {
         // Stop rotation on any mouse interaction
         stopMugRotation();
@@ -151,6 +174,104 @@ function setupInteractionControls() {
         
         mouseX = e.clientX;
         mouseY = e.clientY;
+    });
+
+    // === TOUCH EVENTS ===
+    dom.threeCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        
+        // Stop rotation on touch interaction
+        stopMugRotation();
+        
+        touches = Array.from(e.touches);
+        isTouching = true;
+        
+        if (touches.length === 2) {
+            // Two finger touch - prepare for pinch or pan
+            isPinching = true;
+            lastPinchDistance = getTouchDistance(touches[0], touches[1]);
+            lastTouchCenter = getTouchCenter(touches[0], touches[1]);
+        } else if (touches.length === 1) {
+            // Single finger touch - prepare for rotation
+            isPinching = false;
+            mouseX = touches[0].clientX;
+            mouseY = touches[0].clientY;
+        }
+    });
+    
+    dom.threeCanvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        
+        if (!isTouching) return;
+        
+        const currentTouches = Array.from(e.touches);
+        
+        if (currentTouches.length === 2 && touches.length === 2) {
+            // Two finger pinch/pan
+            const currentDistance = getTouchDistance(currentTouches[0], currentTouches[1]);
+            const currentCenter = getTouchCenter(currentTouches[0], currentTouches[1]);
+            
+            if (isPinching) {
+                // Pinch to zoom
+                const pinchDelta = currentDistance - lastPinchDistance;
+                const zoomSpeed = 0.01;
+                
+                state.camera.position.z -= pinchDelta * zoomSpeed;
+                state.camera.position.z = Math.max(2, Math.min(state.camera.position.z, 15));
+                
+                lastPinchDistance = currentDistance;
+                
+                // Two finger pan (camera movement)
+                const panDeltaX = currentCenter.x - lastTouchCenter.x;
+                const panDeltaY = currentCenter.y - lastTouchCenter.y;
+                const moveSpeed = 0.01;
+                
+                state.camera.position.x -= panDeltaX * moveSpeed;
+                state.camera.position.y += panDeltaY * moveSpeed;
+                
+                lastTouchCenter = currentCenter;
+            }
+        } else if (currentTouches.length === 1 && !isPinching && state.mugMesh) {
+            // Single finger rotation
+            const deltaX = currentTouches[0].clientX - mouseX;
+            const deltaY = currentTouches[0].clientY - mouseY;
+            
+            state.mugMesh.rotation.y += deltaX * 0.01;
+            state.mugMesh.rotation.x += deltaY * 0.01;
+            
+            mouseX = currentTouches[0].clientX;
+            mouseY = currentTouches[0].clientY;
+        }
+        
+        touches = currentTouches;
+    });
+    
+    dom.threeCanvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        
+        const remainingTouches = Array.from(e.touches);
+        
+        if (remainingTouches.length === 0) {
+            // All fingers lifted
+            isTouching = false;
+            isPinching = false;
+            touches = [];
+        } else if (remainingTouches.length === 1 && touches.length === 2) {
+            // Went from two fingers to one - switch to rotation mode
+            isPinching = false;
+            mouseX = remainingTouches[0].clientX;
+            mouseY = remainingTouches[0].clientY;
+            touches = remainingTouches;
+        } else {
+            touches = remainingTouches;
+        }
+    });
+    
+    dom.threeCanvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        isTouching = false;
+        isPinching = false;
+        touches = [];
     });
 
     // Prevent context menu on right-click
