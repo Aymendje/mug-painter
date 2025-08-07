@@ -102,11 +102,46 @@ let animationId = null;
 function init3DScene() {
     // Create scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf8fafc);
     
-    // Get canvas dimensions
+    // Get canvas dimensions first
     const canvasWidth = threeCanvas.clientWidth || 400;
     const canvasHeight = threeCanvas.clientHeight || 400;
+    
+    // Create checkered background texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    
+    // Simple fixed checker size for visibility
+    const checkSize = 16; // Fixed size checkers
+    
+    const color1 = '#f8fafc'; // Light gray
+    const color2 = '#e2e8f0'; // Darker gray for better contrast
+    
+    // Clear canvas first
+    ctx.fillStyle = color1;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw checkers
+    for (let x = 0; x < canvas.width; x += checkSize) {
+        for (let y = 0; y < canvas.height; y += checkSize) {
+            const isEven = (Math.floor(x / checkSize) + Math.floor(y / checkSize)) % 2 === 0;
+            if (!isEven) {
+                ctx.fillStyle = color2;
+                ctx.fillRect(x, y, checkSize, checkSize);
+            }
+        }
+    }
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 2); // Much bigger squares - only 2x2 repeat
+    
+    console.log('Checkered background created');
+    
+    scene.background = texture;
     
     // Create camera
     const aspect = canvasWidth / canvasHeight;
@@ -122,19 +157,12 @@ function init3DScene() {
     });
     renderer.setSize(canvasWidth, canvasHeight);
     renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Disable shadows for cleaner look
+    renderer.shadowMap.enabled = false;
     
-    // Add lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Add simplified lighting (no shadows)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Full ambient lighting
     scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    scene.add(directionalLight);
     
     // Add basic rotation without OrbitControls
     let mouseX = 0, mouseY = 0;
@@ -218,16 +246,25 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     // Position inner wall up to create bottom thickness
     innerWall.translate(0, ceramicThickness / 2, 0);
     
-    // Create bottom ring (annulus)
-    const bottomGeometry = new THREE.RingGeometry(
-        innerRadius,      // inner radius
-        outerRadius,      // outer radius
+    // Create bottom as a solid disk (no hole in center)
+    const bottomGeometry = new THREE.CircleGeometry(
+        outerRadius,      // radius - full bottom
         32               // segments
     );
     
-    // Rotate bottom to be horizontal and position at bottom of mug
-    bottomGeometry.rotateX(-Math.PI / 2);
+    // Rotate bottom to face downward and position at bottom of mug
+    bottomGeometry.rotateX(Math.PI / 2); // Rotate so normals point downward
     bottomGeometry.translate(0, -mugHeight / 2, 0);
+    
+    // Also create a second bottom facing upward (inside the mug) for double-sided
+    const bottomGeometry2 = new THREE.CircleGeometry(
+        outerRadius,      // radius - full bottom
+        32               // segments
+    );
+    
+    // This one faces upward (inside the mug)
+    bottomGeometry2.rotateX(-Math.PI / 2); // Rotate so normals point upward
+    bottomGeometry2.translate(0, -mugHeight / 2, 0);
     
     // Merge all geometries
     const mergedGeometry = new THREE.BufferGeometry();
@@ -236,21 +273,24 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     const outerPositions = outerWall.attributes.position.array;
     const innerPositions = innerWall.attributes.position.array;
     const bottomPositions = bottomGeometry.attributes.position.array;
+    const bottom2Positions = bottomGeometry2.attributes.position.array;
     
     const outerUVs = outerWall.attributes.uv.array;
     const innerUVs = innerWall.attributes.uv.array;
     const bottomUVs = bottomGeometry.attributes.uv.array;
+    const bottom2UVs = bottomGeometry2.attributes.uv.array;
     
     const outerIndices = outerWall.index ? outerWall.index.array : [];
     const innerIndices = innerWall.index ? innerWall.index.array : [];
     const bottomIndices = bottomGeometry.index ? bottomGeometry.index.array : [];
+    const bottom2Indices = bottomGeometry2.index ? bottomGeometry2.index.array : [];
     
     // Combine all positions
     const totalPositions = new Float32Array(
-        outerPositions.length + innerPositions.length + bottomPositions.length
+        outerPositions.length + innerPositions.length + bottomPositions.length + bottom2Positions.length
     );
     const totalUVs = new Float32Array(
-        outerUVs.length + innerUVs.length + bottomUVs.length
+        outerUVs.length + innerUVs.length + bottomUVs.length + bottom2UVs.length
     );
     
     let offset = 0;
@@ -264,6 +304,10 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     
     totalPositions.set(bottomPositions, offset);
     totalUVs.set(bottomUVs, offset / 3 * 2);
+    offset += bottomPositions.length;
+    
+    totalPositions.set(bottom2Positions, offset);
+    totalUVs.set(bottom2UVs, offset / 3 * 2);
     
     // Combine indices with proper offsets
     const totalIndices = [];
@@ -291,6 +335,14 @@ function create3DMugGeometry(height, diameter, handleWidth) {
     if (bottomIndices.length > 0) {
         for (let i = 0; i < bottomIndices.length; i++) {
             totalIndices.push(bottomIndices[i] + vertexOffset);
+        }
+    }
+    vertexOffset += bottomPositions.length / 3;
+    
+    // Second bottom indices
+    if (bottom2Indices.length > 0) {
+        for (let i = 0; i < bottom2Indices.length; i++) {
+            totalIndices.push(bottom2Indices[i] + vertexOffset);
         }
     }
     
@@ -430,18 +482,19 @@ async function update3DMug() {
         if (child.isMesh) {
             // Apply texture to body, simple material to handle
             if (texture && child === mugMesh.children[0]) { // Body mesh (first child)
-                child.material = new THREE.MeshLambertMaterial({
+                child.material = new THREE.MeshBasicMaterial({
                     color: 0xffffff,
                     map: texture
                 });
             } else {
                 // Handle or fallback material
-                child.material = new THREE.MeshLambertMaterial({
+                child.material = new THREE.MeshBasicMaterial({
                     color: 0xffffff
                 });
             }
-            child.castShadow = true;
-            child.receiveShadow = true;
+            // No shadows
+            child.castShadow = false;
+            child.receiveShadow = false;
         }
     });
     
