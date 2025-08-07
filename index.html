@@ -27,7 +27,13 @@
                     <h2 class="text-xl font-semibold text-slate-900 mb-4">Project Name</h2>
                     <div class="input-group">
                         <label for="projectName" class="font-medium text-sm text-slate-700">Enter a filename for your project.</label>
-                        <input type="text" id="projectName" value="my-mug-design" class="input-field w-full">
+                        <div class="flex gap-2">
+                            <input type="text" id="projectName" value="my-mug-design" class="input-field flex-grow">
+                            <input type="file" id="loadProjectInput" class="hidden" accept=".svg,.mugproj">
+                            <button id="loadProjectBtn" class="btn btn-secondary" title="Load Project">
+                                📁 Load
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <!-- Mug Dimensions -->
@@ -213,6 +219,13 @@
                         <option value="png">PNG (Image)</option>
                         <option value="pdf">PDF (Document)</option>
                     </select>
+                </div>
+                <div class="input-group mb-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="includeProjectData" checked class="rounded">
+                        <span class="font-medium text-sm text-slate-700">Include project data for re-editing</span>
+                    </label>
+                    <p class="text-xs text-slate-500 mt-1">When enabled, exported files can be loaded back for further editing</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button id="downloadCutoutBtn" class="btn btn-secondary w-full text-lg" disabled>

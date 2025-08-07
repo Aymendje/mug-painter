@@ -69,6 +69,9 @@ const bgNoneControls = document.getElementById('bg-none-controls');
 const exportFormatSelect = document.getElementById('exportFormat');
 const downloadDesignBtn = document.getElementById('downloadDesignBtn');
 const downloadCutoutBtn = document.getElementById('downloadCutoutBtn');
+const includeProjectDataCheckbox = document.getElementById('includeProjectData');
+const loadProjectBtn = document.getElementById('loadProjectBtn');
+const loadProjectInput = document.getElementById('loadProjectInput');
 
 // Global variables
 let svgForDesign = '';
@@ -178,10 +181,16 @@ async function generateTemplate() {
         mainFillForPreview = 'fill="url(#checkerboard)"';
     }
     
-    // 6. Assemble SVGs
+    // 6. Assemble SVGs with optional project metadata
+    let projectMetadata = '';
+    if (includeProjectDataCheckbox.checked) {
+        const projectData = collectProjectData();
+        projectMetadata = `<!--MUG_PAINTER_PROJECT_DATA:${btoa(JSON.stringify(projectData))}:END_PROJECT_DATA-->`;
+    }
+    
     const finalDefs = defs ? `<defs>${defs}</defs>` : '';
     const svgContentForPreview = `<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" ${mainFillForPreview} stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${faceArtTag}${backArtTag}<rect x="${faceBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/><rect x="${backBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/></svg>`;
-    svgForDesign = `<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" ${mainFillForDownload} stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${faceArtTag}${backArtTag}</svg>`;
+    svgForDesign = `${projectMetadata}<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" ${mainFillForDownload} stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${faceArtTag}${backArtTag}</svg>`;
     
     // 7. Update UI
     svgContainer.innerHTML = svgContentForPreview;
@@ -525,6 +534,201 @@ async function renderAndDownloadPDF(svgString, filename) {
     pdf.save(filename);
 }
 
+// Project Save/Load Functions
+function collectProjectData() {
+    const projectData = {
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        
+        // Project settings
+        projectName: projectNameInput.value,
+        mugDimensions: {
+            height: parseFloat(heightInput.value),
+            diameter: parseFloat(diameterInput.value),
+            handleAreaWidth: parseFloat(handleAreaWidthInput.value)
+        },
+        
+        // Background settings
+        background: {
+            type: document.querySelector('input[name="backgroundType"]:checked').value,
+            color: bgColorPicker.value,
+            imageData: uploadedBgImageData,
+            imageStyle: bgImageStyle.value,
+            imageSize: bgImageSize.value
+        },
+        
+        // Face artwork settings
+        faceArt: {
+            type: document.querySelector('input[name="faceArtType"]:checked').value,
+            imageData: uploadedFaceImage,
+            isFlippedH: isFaceFlippedH,
+            isFlippedV: isFaceFlippedV,
+            rotation: faceRotation,
+            text: faceTextInput.value,
+            font: selectedFaceFont,
+            color: faceColorPicker.value,
+            bold: isFaceBold,
+            italic: isFaceItalic,
+            underline: isFaceUnderline,
+            strikethrough: isFaceStrikethrough,
+            contour: isFaceContour,
+            contourColor: faceContourColorPicker.value
+        },
+        
+        // Back artwork settings
+        backArt: {
+            type: document.querySelector('input[name="backArtType"]:checked').value,
+            imageData: uploadedBackImage,
+            isFlippedH: isBackFlippedH,
+            isFlippedV: isBackFlippedV,
+            rotation: backRotation,
+            text: backTextInput.value,
+            font: selectedBackFont,
+            color: backColorPicker.value,
+            bold: isBackBold,
+            italic: isBackItalic,
+            underline: isBackUnderline,
+            strikethrough: isBackStrikethrough,
+            contour: isBackContour,
+            contourColor: backContourColorPicker.value
+        }
+    };
+    
+    return projectData;
+}
+
+function loadProjectData(projectData) {
+    try {
+        // Project settings
+        if (projectData.projectName) projectNameInput.value = projectData.projectName;
+        
+        // Mug dimensions
+        if (projectData.mugDimensions) {
+            heightInput.value = projectData.mugDimensions.height;
+            diameterInput.value = projectData.mugDimensions.diameter;
+            handleAreaWidthInput.value = projectData.mugDimensions.handleAreaWidth;
+        }
+        
+        // Background settings
+        if (projectData.background) {
+            const bg = projectData.background;
+            // Set background type
+            const bgRadio = document.querySelector(`input[name="backgroundType"][value="${bg.type}"]`);
+            if (bgRadio) bgRadio.checked = true;
+            
+            bgColorPicker.value = bg.color || '#BFDBFE';
+            uploadedBgImageData = bg.imageData || null;
+            bgImageStyle.value = bg.imageStyle || 'fill';
+            bgImageSize.value = bg.imageSize || 'original';
+        }
+        
+        // Face artwork settings
+        if (projectData.faceArt) {
+            const face = projectData.faceArt;
+            // Set face art type
+            const faceRadio = document.querySelector(`input[name="faceArtType"][value="${face.type}"]`);
+            if (faceRadio) faceRadio.checked = true;
+            
+            // Image settings
+            uploadedFaceImage = face.imageData || null;
+            isFaceFlippedH = face.isFlippedH || false;
+            isFaceFlippedV = face.isFlippedV || false;
+            faceRotation = face.rotation || 0;
+            
+            // Text settings
+            faceTextInput.value = face.text || '';
+            selectedFaceFont = face.font || 'Roboto';
+            faceColorPicker.value = face.color || '#000000';
+            isFaceBold = face.bold || false;
+            isFaceItalic = face.italic || false;
+            isFaceUnderline = face.underline || false;
+            isFaceStrikethrough = face.strikethrough || false;
+            isFaceContour = face.contour || false;
+            faceContourColorPicker.value = face.contourColor || '#000000';
+        }
+        
+        // Back artwork settings
+        if (projectData.backArt) {
+            const back = projectData.backArt;
+            // Set back art type
+            const backRadio = document.querySelector(`input[name="backArtType"][value="${back.type}"]`);
+            if (backRadio) backRadio.checked = true;
+            
+            // Image settings
+            uploadedBackImage = back.imageData || null;
+            isBackFlippedH = back.isFlippedH || false;
+            isBackFlippedV = back.isFlippedV || false;
+            backRotation = back.rotation || 0;
+            
+            // Text settings
+            backTextInput.value = back.text || '';
+            selectedBackFont = back.font || 'Roboto';
+            backColorPicker.value = back.color || '#000000';
+            isBackBold = back.bold || false;
+            isBackItalic = back.italic || false;
+            isBackUnderline = back.underline || false;
+            isBackStrikethrough = back.strikethrough || false;
+            isBackContour = back.contour || false;
+            backContourColorPicker.value = back.contourColor || '#000000';
+        }
+        
+        // Update button states
+        updateFormattingButtonStates();
+        
+        // Update custom dropdowns
+        if (window.faceDropdown) {
+            window.faceDropdown.setValue(selectedFaceFont);
+        }
+        if (window.backDropdown) {
+            window.backDropdown.setValue(selectedBackFont);
+        }
+        
+        // Update UI visibility
+        updateControlsVisibility();
+        
+        // Regenerate template
+        generateTemplate();
+        
+        console.log('Project loaded successfully!', projectData);
+    } catch (error) {
+        console.error('Error loading project data:', error);
+        alert('Error loading project file. The file may be corrupted or from an incompatible version.');
+    }
+}
+
+function updateFormattingButtonStates() {
+    // Update face formatting buttons
+    toggleButtonState(faceBoldBtn, isFaceBold);
+    toggleButtonState(faceItalicBtn, isFaceItalic);
+    toggleButtonState(faceUnderlineBtn, isFaceUnderline);
+    toggleButtonState(faceStrikethroughBtn, isFaceStrikethrough);
+    toggleButtonState(faceContourBtn, isFaceContour);
+    faceContourControls.classList.toggle('hidden', !isFaceContour);
+    
+    // Update back formatting buttons
+    toggleButtonState(backBoldBtn, isBackBold);
+    toggleButtonState(backItalicBtn, isBackItalic);
+    toggleButtonState(backUnderlineBtn, isBackUnderline);
+    toggleButtonState(backStrikethroughBtn, isBackStrikethrough);
+    toggleButtonState(backContourBtn, isBackContour);
+    backContourControls.classList.toggle('hidden', !isBackContour);
+}
+
+function parseProjectFromSVG(svgContent) {
+    const metadataMatch = svgContent.match(/<!--MUG_PAINTER_PROJECT_DATA:([^:]+):END_PROJECT_DATA-->/);
+    if (metadataMatch) {
+        try {
+            const encodedData = metadataMatch[1];
+            const decodedData = atob(encodedData);
+            return JSON.parse(decodedData);
+        } catch (error) {
+            console.error('Error parsing project data from SVG:', error);
+            return null;
+        }
+    }
+    return null;
+}
+
 function toggleButtonState(button, isActive) {
     if (isActive) {
         button.classList.remove('btn-secondary');
@@ -773,12 +977,12 @@ loadGoogleFonts();
 // Initialize custom dropdowns
 let dropdownsInitialized = false;
 setTimeout(() => {
-    const faceDropdown = new CustomSelect(faceFontSelect, selectedFaceFont, (value) => {
+    window.faceDropdown = new CustomSelect(faceFontSelect, selectedFaceFont, (value) => {
         selectedFaceFont = value;
         if (dropdownsInitialized) generateTemplate();
     });
     
-    const backDropdown = new CustomSelect(backFontSelect, selectedBackFont, (value) => {
+    window.backDropdown = new CustomSelect(backFontSelect, selectedBackFont, (value) => {
         selectedBackFont = value;
         if (dropdownsInitialized) generateTemplate();
     });
@@ -788,6 +992,31 @@ setTimeout(() => {
     // Generate initial template after dropdowns are ready
     generateTemplate();
 }, 500); // Wait for fonts to start loading
+
+// Project load event handlers
+loadProjectBtn.addEventListener('click', () => {
+    loadProjectInput.click();
+});
+
+loadProjectInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileContent = event.target.result;
+            const projectData = parseProjectFromSVG(fileContent);
+            
+            if (projectData) {
+                if (confirm('This will replace your current project. Continue?')) {
+                    loadProjectData(projectData);
+                }
+            } else {
+                alert('No project data found in this file. Make sure the file was exported with project data enabled.');
+            }
+        };
+        reader.readAsText(file);
+    }
+});
 
 // Pre-fetch all fonts on startup
 prefetchAllFonts();
