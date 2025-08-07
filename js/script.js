@@ -103,14 +103,15 @@ function init3DScene() {
     // Create scene
     scene = new THREE.Scene();
     
-    // Get canvas dimensions first
-    const canvasWidth = threeCanvas.clientWidth || 400;
-    const canvasHeight = threeCanvas.clientHeight || 400;
+    // Get canvas dimensions from svg-preview
+    const previewRect = svgPreview.getBoundingClientRect();
+    const canvasWidth = previewRect.width > 4 ? previewRect.width - 4 : 400;
+    const canvasHeight = previewRect.height > 4 ? previewRect.height - 4 : 400;
     
     // Create checkered background texture
     const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
+    canvas.width = Math.min(canvasWidth, 256) || 128;
+    canvas.height = Math.min(canvasHeight, 256) || 128;
     const ctx = canvas.getContext('2d');
     
     // Simple fixed checker size for visibility
@@ -181,46 +182,82 @@ function init3DScene() {
     directionalLight.shadow.bias = -0.0001; // Reduce shadow acne
     scene.add(directionalLight);
     
-    // Add basic rotation without OrbitControls
+    // Add basic rotation and camera movement
     let mouseX = 0, mouseY = 0;
-    let isMouseDown = false;
+    let isLeftMouseDown = false;
+    let isRightMouseDown = false;
     
     threeCanvas.addEventListener('mousedown', (e) => {
-        isMouseDown = true;
+        if (e.button === 0) { // Left mouse button
+            isLeftMouseDown = true;
+        } else if (e.button === 2) { // Right mouse button
+            isRightMouseDown = true;
+            e.preventDefault(); // Prevent context menu
+        }
         mouseX = e.clientX;
         mouseY = e.clientY;
     });
     
-    threeCanvas.addEventListener('mouseup', () => {
-        isMouseDown = false;
+    threeCanvas.addEventListener('mouseup', (e) => {
+        if (e.button === 0) {
+            isLeftMouseDown = false;
+        } else if (e.button === 2) {
+            isRightMouseDown = false;
+        }
     });
     
     threeCanvas.addEventListener('mousemove', (e) => {
-        if (!isMouseDown) return;
+        if (!isLeftMouseDown && !isRightMouseDown) return;
         
         const deltaX = e.clientX - mouseX;
         const deltaY = e.clientY - mouseY;
         
-        if (mugMesh) {
+        if (isLeftMouseDown && mugMesh) {
+            // Left mouse: rotate mug
             mugMesh.rotation.y += deltaX * 0.01;
             mugMesh.rotation.x += deltaY * 0.01;
+        } else if (isRightMouseDown) {
+            // Right mouse: move camera in X/Y
+            const moveSpeed = 0.01;
+            camera.position.x -= deltaX * moveSpeed;
+            camera.position.y += deltaY * moveSpeed;
         }
         
         mouseX = e.clientX;
         mouseY = e.clientY;
+    });
+
+    // Prevent context menu on right-click
+    threeCanvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    // Add scroll-to-zoom functionality
+    threeCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        const zoomSpeed = 0.01;
+        const delta = e.deltaY * zoomSpeed;
+        
+        // Adjust camera position for zoom
+        camera.position.z += delta;
+        
+        // Clamp zoom limits
+        camera.position.z = Math.max(2, Math.min(camera.position.z, 15));
     });
     
     // Handle canvas resize
     const resizeObserver = new ResizeObserver(() => {
         if (renderer && camera) {
-            const width = threeCanvas.clientWidth;
-            const height = threeCanvas.clientHeight;
+            const previewRect = svgPreview.getBoundingClientRect();
+            const width = previewRect.width > 4 ? previewRect.width - 4 : 400;
+            const height = previewRect.height > 4 ? previewRect.height - 4 : 400;
             renderer.setSize(width, height);
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
         }
     });
-    resizeObserver.observe(threeCanvas);
+    resizeObserver.observe(svgPreview);
     
     // Force initial render
     renderer.render(scene, camera);
@@ -446,9 +483,10 @@ async function createMugTexture() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
-    // Set canvas size for texture (power of 2 for WebGL)
-    canvas.width = 1024;
-    canvas.height = 512;
+    // Get dimensions from svg-preview instead of hardcoding
+    const previewRect = svgPreview.getBoundingClientRect();
+    canvas.width = previewRect.width > 0 ? previewRect.width : 1024;
+    canvas.height = previewRect.height > 0 ? previewRect.height : 512;
     
     // Create image from SVG
     const img = new Image();
