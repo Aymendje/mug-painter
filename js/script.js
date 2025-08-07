@@ -229,6 +229,10 @@ async function createArtElement(type, x, y, w, h) {
         const textDecorationValue = textDecoration.length > 0 ? textDecoration.join(' ') : 'none';
         
         const lines = text.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            lines[i] = lines[i] || ' ';
+            lines[i] = lines[i].replace(/ /g, '\u00A0');
+        }
         const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         tempSvg.style.position = 'absolute'; tempSvg.style.visibility = 'hidden';
         const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
