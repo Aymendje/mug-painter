@@ -19,6 +19,13 @@ const faceTextControls = document.getElementById('face-text-controls');
 const faceTextInput = document.getElementById('faceTextInput');
 const faceFontSelect = document.getElementById('faceFontSelect');
 const faceColorPicker = document.getElementById('faceColorPicker');
+const faceBoldBtn = document.getElementById('faceBoldBtn');
+const faceItalicBtn = document.getElementById('faceItalicBtn');
+const faceUnderlineBtn = document.getElementById('faceUnderlineBtn');
+const faceStrikethroughBtn = document.getElementById('faceStrikethroughBtn');
+const faceContourBtn = document.getElementById('faceContourBtn');
+const faceContourControls = document.getElementById('face-contour-controls');
+const faceContourColorPicker = document.getElementById('faceContourColorPicker');
 
 // Back Controls
 const backArtTypeRadios = document.querySelectorAll('input[name="backArtType"]');
@@ -33,6 +40,13 @@ const backTextControls = document.getElementById('back-text-controls');
 const backTextInput = document.getElementById('backTextInput');
 const backFontSelect = document.getElementById('backFontSelect');
 const backColorPicker = document.getElementById('backColorPicker');
+const backBoldBtn = document.getElementById('backBoldBtn');
+const backItalicBtn = document.getElementById('backItalicBtn');
+const backUnderlineBtn = document.getElementById('backUnderlineBtn');
+const backStrikethroughBtn = document.getElementById('backStrikethroughBtn');
+const backContourBtn = document.getElementById('backContourBtn');
+const backContourControls = document.getElementById('back-contour-controls');
+const backContourColorPicker = document.getElementById('backContourColorPicker');
 
 // Background Controls
 const bgTypeRadios = document.querySelectorAll('input[name="backgroundType"]');
@@ -55,6 +69,9 @@ let svgForDesign = '';
 let uploadedFaceImage = null, isFaceFlippedH = false, isFaceFlippedV = false, faceRotation = 0;
 let uploadedBackImage = null, isBackFlippedH = false, isBackFlippedV = false, backRotation = 0;
 let uploadedBgImageData = null;
+// Text formatting states
+let isFaceBold = false, isFaceItalic = false, isFaceUnderline = false, isFaceStrikethrough = false, isFaceContour = false;
+let isBackBold = false, isBackItalic = false, isBackUnderline = false, isBackStrikethrough = false, isBackContour = false;
 const fontCache = {};
 const googleFonts = ["Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", "Source Sans Pro", "Slabo 27px", "Raleway", "PT Sans", "Merriweather", "Lobster", "Pacifico", "Caveat"];
 
@@ -186,12 +203,30 @@ async function createArtElement(type, x, y, w, h) {
         const font = type === 'face' ? faceFontSelect.value : backFontSelect.value;
         const color = type === 'face' ? faceColorPicker.value : backColorPicker.value;
         
+        // Get formatting states
+        const isBold = type === 'face' ? isFaceBold : isBackBold;
+        const isItalic = type === 'face' ? isFaceItalic : isBackItalic;
+        const isUnderline = type === 'face' ? isFaceUnderline : isBackUnderline;
+        const isStrikethrough = type === 'face' ? isFaceStrikethrough : isBackStrikethrough;
+        const isContour = type === 'face' ? isFaceContour : isBackContour;
+        const contourColor = type === 'face' ? faceContourColorPicker.value : backContourColorPicker.value;
+        
+        // Build style attributes
+        const fontWeight = isBold ? '700' : '400';
+        const fontStyle = isItalic ? 'italic' : 'normal';
+        const textDecoration = [];
+        if (isUnderline) textDecoration.push('underline');
+        if (isStrikethrough) textDecoration.push('line-through');
+        const textDecorationValue = textDecoration.length > 0 ? textDecoration.join(' ') : 'none';
+        
         const lines = text.split('\n');
         const tempSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         tempSvg.style.position = 'absolute'; tempSvg.style.visibility = 'hidden';
         const textNode = document.createElementNS("http://www.w3.org/2000/svg", "text");
         textNode.setAttribute('font-family', `"${font}"`);
-        textNode.setAttribute('font-size', '100'); // Large size for accurate measurement
+        textNode.setAttribute('font-size', '100');
+        textNode.setAttribute('font-weight', fontWeight);
+        textNode.setAttribute('font-style', fontStyle);
         lines.forEach((line, i) => {
             const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
             tspan.textContent = line;
@@ -206,7 +241,13 @@ async function createArtElement(type, x, y, w, h) {
         const scale = Math.min(w / bbox.width, h / bbox.height);
         const finalFontSize = 100 * scale;
         const transform = `translate(${x + w / 2}, ${y + h / 2})`;
-        return `<text x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" fill="${color}" dominant-baseline="middle" text-anchor="middle" transform="${transform}">${lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('')}</text>`;
+        
+        // Build stroke attributes for contour
+        const strokeAttributes = isContour 
+            ? `stroke="${contourColor}" stroke-width="2"` 
+            : '';
+        
+        return `<text x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" fill="${color}" ${strokeAttributes} dominant-baseline="middle" text-anchor="middle" transform="${transform}">${lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('')}</text>`;
     }
     return '';
 }
@@ -367,10 +408,109 @@ async function generateAndDownloadCutout() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    } else if (format === 'pdf') {
+        // Create a simple PDF with the cutout PNG
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'letter'
+        });
+        
+        const margin = 6.3;
+        const pageWidth = 279.4;
+        const pageHeight = 215.9;
+        const maxContentWidth = pageWidth - (2 * margin);
+        const maxContentHeight = pageHeight - (2 * margin);
+        
+        // Calculate scale to fit cutout image
+        const scaleX = maxContentWidth / svgWidth;
+        const scaleY = maxContentHeight / svgHeight;
+        const scale = Math.min(scaleX, scaleY);
+        const finalWidth = svgWidth * scale;
+        const finalHeight = svgHeight * scale;
+        
+        pdf.addImage(pngDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
+        pdf.save(filename);
     } else { // SVG
         const pathData = svgForDesign.match(/<path[^>]+d="([^ "]+)"/)[1];
         const finalMaskSvg = `<svg width="${svgWidth.toFixed(2)}mm" height="${svgHeight.toFixed(2)}mm" viewBox="0 0 ${svgWidth} ${svgHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><clipPath id="mugClipPath"><path d="${pathData}" /></clipPath></defs><image href="${pngDataUrl}" x="0" y="0" width="${svgWidth}" height="${svgHeight}" clip-path="url(#mugClipPath)" /></svg>`;
         triggerDownload(finalMaskSvg, filename);
+    }
+}
+
+async function renderAndDownloadPDF(svgString, filename) {
+    // Letter size in horizontal orientation: 11" x 8.5" (279.4mm x 215.9mm)
+    // Minimum margins: 6.3mm on all sides
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+        orientation: 'landscape', // horizontal orientation
+        unit: 'mm',
+        format: 'letter' // 8.5x11 inches
+    });
+    
+    // Letter size dimensions in landscape: width=279.4mm, height=215.9mm
+    const pageWidth = 279.4;
+    const pageHeight = 215.9;
+    const margin = 6.3; // minimum margin 6.3mm on all sides
+    
+    // Calculate available space for content
+    const maxContentWidth = pageWidth - (2 * margin);
+    const maxContentHeight = pageHeight - (2 * margin);
+    
+    // Convert SVG to image for PDF embedding
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    await new Promise((resolve, reject) => {
+        img.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+        img.src = url;
+    });
+
+    // Get SVG dimensions
+    const widthMatch = svgString.match(/width="(\d+(\.\d+)?)/);
+    const heightMatch = svgString.match(/height="(\d+(\.\d+)?)/);
+    const svgWidth = widthMatch ? parseFloat(widthMatch[1]) : 800;
+    const svgHeight = heightMatch ? parseFloat(heightMatch[1]) : 300;
+    
+    // Calculate scale to fit within available space while maintaining aspect ratio
+    const scaleX = maxContentWidth / svgWidth;
+    const scaleY = maxContentHeight / svgHeight;
+    const scale = Math.min(scaleX, scaleY);
+    
+    const finalWidth = svgWidth * scale;
+    const finalHeight = svgHeight * scale;
+    
+    // High resolution for PDF
+    const dpi = 300;
+    const pdfScale = dpi / 25.4; // mm to pixels at 300 DPI
+    canvas.width = Math.round(svgWidth * pdfScale);
+    canvas.height = Math.round(svgHeight * pdfScale);
+    
+    // Draw SVG to canvas
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to image data URL
+    const imageDataUrl = canvas.toDataURL('image/png');
+    
+    // Add image to PDF at top-left position (with margin)
+    pdf.addImage(imageDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
+    
+    // Save the PDF
+    pdf.save(filename);
+}
+
+function toggleButtonState(button, isActive) {
+    if (isActive) {
+        button.classList.remove('btn-secondary');
+        button.classList.add('btn-primary');
+    } else {
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-secondary');
     }
 }
 
@@ -399,7 +539,7 @@ function updateControlsVisibility() {
 }
 
 // --- Attach Event Listeners ---
-const allInputs = [projectNameInput, heightInput, diameterInput, handleAreaWidthInput, bgColorPicker, exportFormatSelect, faceTextInput, faceColorPicker, backTextInput, backColorPicker];
+const allInputs = [projectNameInput, heightInput, diameterInput, handleAreaWidthInput, bgColorPicker, exportFormatSelect, faceTextInput, faceColorPicker, faceContourColorPicker, backTextInput, backColorPicker, backContourColorPicker];
 allInputs.forEach(input => input.addEventListener('input', generateTemplate));
 
 [faceFontSelect, backFontSelect].forEach(sel => sel.addEventListener('change', generateTemplate));
@@ -415,16 +555,25 @@ flipFaceVBtn.addEventListener('click', () => { isFaceFlippedV = !isFaceFlippedV;
 rotateFaceLBtn.addEventListener('click', () => { faceRotation = (faceRotation - 90 + 360) % 360; generateTemplate(); });
 rotateFaceRBtn.addEventListener('click', () => { faceRotation = (faceRotation + 90) % 360; generateTemplate(); });
 
+// Face formatting buttons
+faceBoldBtn.addEventListener('click', () => { isFaceBold = !isFaceBold; toggleButtonState(faceBoldBtn, isFaceBold); generateTemplate(); });
+faceItalicBtn.addEventListener('click', () => { isFaceItalic = !isFaceItalic; toggleButtonState(faceItalicBtn, isFaceItalic); generateTemplate(); });
+faceUnderlineBtn.addEventListener('click', () => { isFaceUnderline = !isFaceUnderline; toggleButtonState(faceUnderlineBtn, isFaceUnderline); generateTemplate(); });
+faceStrikethroughBtn.addEventListener('click', () => { isFaceStrikethrough = !isFaceStrikethrough; toggleButtonState(faceStrikethroughBtn, isFaceStrikethrough); generateTemplate(); });
+faceContourBtn.addEventListener('click', () => { isFaceContour = !isFaceContour; toggleButtonState(faceContourBtn, isFaceContour); faceContourControls.classList.toggle('hidden', !isFaceContour); generateTemplate(); });
+
 uploadBackBtn.addEventListener('click', () => backImageInput.click());
 backImageInput.addEventListener('change', (e) => handleImageUpload(e, 'back'));
 flipBackHBtn.addEventListener('click', () => { isBackFlippedH = !isBackFlippedH; generateTemplate(); });
 flipBackVBtn.addEventListener('click', () => { isBackFlippedV = !isBackFlippedV; generateTemplate(); });
 rotateBackLBtn.addEventListener('click', () => { backRotation = (backRotation - 90 + 360) % 360; generateTemplate(); });
 rotateBackRBtn.addEventListener('click', () => { backRotation = (backRotation + 90) % 360; generateTemplate(); });
-backBoldBtn.addEventListener('click', () => { isBackBold = !isBackBold; generateTemplate(); });
-backItalicBtn.addEventListener('click', () => { isBackItalic = !isBackItalic; generateTemplate(); });
-backUnderlineBtn.addEventListener('click', () => { isBackUnderline = !isBackUnderline; generateTemplate(); });
-backStrikethroughBtn.addEventListener('click', () => { isBackStrikethrough = !isBackStrikethrough; generateTemplate(); });
+// Back formatting buttons
+backBoldBtn.addEventListener('click', () => { isBackBold = !isBackBold; toggleButtonState(backBoldBtn, isBackBold); generateTemplate(); });
+backItalicBtn.addEventListener('click', () => { isBackItalic = !isBackItalic; toggleButtonState(backItalicBtn, isBackItalic); generateTemplate(); });
+backUnderlineBtn.addEventListener('click', () => { isBackUnderline = !isBackUnderline; toggleButtonState(backUnderlineBtn, isBackUnderline); generateTemplate(); });
+backStrikethroughBtn.addEventListener('click', () => { isBackStrikethrough = !isBackStrikethrough; toggleButtonState(backStrikethroughBtn, isBackStrikethrough); generateTemplate(); });
+backContourBtn.addEventListener('click', () => { isBackContour = !isBackContour; toggleButtonState(backContourBtn, isBackContour); backContourControls.classList.toggle('hidden', !isBackContour); generateTemplate(); });
 
 bgUploadBtn.addEventListener('click', () => bgImageUploadInput.click());
 bgImageUploadInput.addEventListener('change', (e) => handleImageUpload(e, 'bg'));
@@ -437,6 +586,8 @@ downloadDesignBtn.addEventListener('click', () => {
     const filename = `${filenameBase}.${format}`;
     if (format === 'svg') {
         triggerDownload(svgForDesign, filename);
+    } else if (format === 'pdf') {
+        renderAndDownloadPDF(svgForDesign, filename);
     } else {
         renderAndDownloadPNG(svgForDesign, filename);
     }
@@ -451,9 +602,28 @@ function prefetchAllFonts() {
     });
 }
 
+// Add font preloading and styling
+function addFontPreloading() {
+    const fontLinks = googleFonts.map(font => 
+        `@import url('https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;700&display=swap');`
+    ).join('\n');
+    
+    const style = document.createElement('style');
+    style.innerHTML = `
+        ${fontLinks}
+        ${googleFonts.map(font => `.font-option-${font.replace(/[^a-zA-Z0-9]/g, '')} { font-family: "${font}"; }`).join('\n')}
+    `;
+    document.head.appendChild(style);
+}
+
+addFontPreloading();
+
 googleFonts.forEach(font => {
     const option1 = new Option(font, font);
     const option2 = new Option(font, font);
+    const className = `font-option-${font.replace(/[^a-zA-Z0-9]/g, '')}`;
+    option1.className = className;
+    option2.className = className;
     faceFontSelect.add(option1);
     backFontSelect.add(option2);
 });

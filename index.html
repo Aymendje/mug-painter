@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mug Painter</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -129,6 +130,11 @@
                                     <button id="faceItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
                                     <button id="faceUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
                                     <button id="faceStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                    <button id="faceContourBtn" class="btn btn-secondary btn-icon" title="Contour">C</button>
+                                </div>
+                                <div id="face-contour-controls" class="hidden flex gap-2 justify-center items-center mt-2">
+                                    <label class="font-medium text-sm text-slate-700">Contour Color:</label>
+                                    <input type="color" id="faceContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
                                 </div>
                             </div>
                         </div>
@@ -161,6 +167,11 @@
                                     <button id="backItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
                                     <button id="backUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
                                     <button id="backStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                    <button id="backContourBtn" class="btn btn-secondary btn-icon" title="Contour">C</button>
+                                </div>
+                                <div id="back-contour-controls" class="hidden flex gap-2 justify-center items-center mt-2">
+                                    <label class="font-medium text-sm text-slate-700">Contour Color:</label>
+                                    <input type="color" id="backContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
                                 </div>
                             </div>
                         </div>
@@ -184,6 +195,7 @@
                     <select id="exportFormat" class="select-field w-full">
                         <option value="svg" selected>SVG (Vector)</option>
                         <option value="png">PNG (Image)</option>
+                        <option value="pdf">PDF (Document)</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
