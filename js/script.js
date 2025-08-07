@@ -41,6 +41,7 @@ const bgColorPicker = document.getElementById('bgColorPicker');
 const bgImageControls = document.getElementById('bg-image-controls');
 const bgUploadBtn = document.getElementById('bgUploadBtn');
 const bgImageUploadInput = document.getElementById('bgImageUpload');
+const bgNoneControls = document.getElementById('bg-none-controls');
 
 // Export Controls
 const exportFormatSelect = document.getElementById('exportFormat');
@@ -148,7 +149,6 @@ async function createArtElement(type, x, y, w, h) {
             const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
             tspan.textContent = line;
             tspan.setAttribute('x', '0');
-            tspan.setAttribute('dy', i === 0 ? '0' : '1.2em');
             textNode.appendChild(tspan);
         });
         tempSvg.appendChild(textNode);
@@ -329,6 +329,7 @@ async function generateAndDownloadCutout() {
 
 function updateControlsVisibility() {
     const selectedBgType = document.querySelector('input[name="backgroundType"]:checked').value;
+    bgNoneControls.classList.toggle('hidden', selectedBgType !== 'transparent');
     bgColorControls.classList.toggle('hidden', selectedBgType !== 'color');
     bgImageControls.classList.toggle('hidden', selectedBgType !== 'image');
     
