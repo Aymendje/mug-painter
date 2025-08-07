@@ -657,10 +657,19 @@ async function generateTemplate() {
     let faceArtTag = await createArtElement('face', faceBoxX, boxY, boxWidth, boxHeight);
     let backArtTag = await createArtElement('back', backBoxX, boxY, boxWidth, boxHeight);
 
-    // 5. Determine background fill
+    // 5. Create background area (only for main cylindrical section, not handle areas)
+    const bgAreaX = areaWidth;
+    const bgAreaWidth = width - (2 * areaWidth);
+    const bgAreaHeight = mainHeight;
+    const backgroundPath = `M ${bgAreaX.toFixed(2)} 0 L ${(bgAreaX + bgAreaWidth).toFixed(2)} 0 L ${(bgAreaX + bgAreaWidth).toFixed(2)} ${bgAreaHeight.toFixed(2)} L ${bgAreaX.toFixed(2)} ${bgAreaHeight.toFixed(2)} Z`;
+
+    // 6. Determine background fill
     const selectedBgType = document.querySelector('input[name="backgroundType"]:checked').value;
     let defs = fontDefsForSVG || '';
-    let mainFillForPreview = '', mainFillForDownload = 'fill="none"';
+    let backgroundElement = '';
+    
+    // Always include checkerboard pattern for preview
+    defs += `<pattern id="checkerboard" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="10" height="10" x="0" y="0" fill="#e2e8f0" /><rect width="10" height="10" x="10" y="0" fill="#f1f5f9" /><rect width="10" height="10" x="0" y="10" fill="#f1f5f9" /><rect width="10" height="10" x="10" y="10" fill="#e2e8f0" /></pattern>`;
 
     if (selectedBgType === 'image' && uploadedBgImageData) {
         const image = new Image();
@@ -685,42 +694,39 @@ async function generateTemplate() {
         if (style === 'tile') {
             const pattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${w}" height="${h}"><image href="${uploadedBgImageData}" x="0" y="0" width="${w}" height="${h}"/></pattern>`;
             defs += pattern;
-            mainFillForPreview = 'fill="url(#bgPattern)"';
-            mainFillForDownload = 'fill="url(#bgPattern)"';
+            backgroundElement = `<path d="${backgroundPath}" fill="url(#bgPattern)"/>`;
         } else {
-            let x = 0, y = 0;
+            let x = bgAreaX, y = 0;
             let imgWidth = w, imgHeight = h;
             let preserveAspectRatio = 'none';
             if (style === 'fit') {
                 preserveAspectRatio = 'xMidYMid meet';
-                imgWidth = width;
+                imgWidth = bgAreaWidth;
                 imgHeight = mainHeight;
             } else if (style === 'fill') {
                 preserveAspectRatio = 'xMidYMid slice';
-                imgWidth = width;
+                imgWidth = bgAreaWidth;
                 imgHeight = mainHeight;
             } else if (style === 'center') {
-                x = (width - w) / 2;
+                x = bgAreaX + (bgAreaWidth - w) / 2;
                 y = (mainHeight - h) / 2;
             } else if (style === 'stretch') {
-                imgWidth = width;
+                imgWidth = bgAreaWidth;
                 imgHeight = mainHeight;
             }
             imageTag = `<image href="${uploadedBgImageData}" x="${x}" y="${y}" width="${imgWidth}" height="${imgHeight}" preserveAspectRatio="${preserveAspectRatio}"/>`;
-            const bgPattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${width.toFixed(2)}" height="${mainHeight.toFixed(2)}">${imageTag}</pattern>`;
+            const bgPattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${bgAreaWidth.toFixed(2)}" height="${mainHeight.toFixed(2)}">${imageTag}</pattern>`;
             defs += bgPattern;
-            mainFillForPreview = 'fill="url(#bgPattern)"';
-            mainFillForDownload = 'fill="url(#bgPattern)"';
+            backgroundElement = `<path d="${backgroundPath}" fill="url(#bgPattern)"/>`;
         }
     } else if (selectedBgType === 'color') {
-        mainFillForPreview = `fill="${bgColorPicker.value}"`;
-        mainFillForDownload = `fill="${bgColorPicker.value}"`;
+        backgroundElement = `<path d="${backgroundPath}" fill="${bgColorPicker.value}"/>`;
     } else { // Transparent
-        defs += `<pattern id="checkerboard" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="10" height="10" x="0" y="0" fill="#e2e8f0" /><rect width="10" height="10" x="10" y="0" fill="#f1f5f9" /><rect width="10" height="10" x="0" y="10" fill="#f1f5f9" /><rect width="10" height="10" x="10" y="10" fill="#e2e8f0" /></pattern>`;
-        mainFillForPreview = 'fill="url(#checkerboard)"';
+        // For transparent background, don't create a background element (will be handled in preview separately)
+        backgroundElement = '';
     }
     
-    // 6. Assemble SVGs with optional project metadata
+    // 7. Assemble SVGs with optional project metadata
     let projectMetadata = '';
     if (includeProjectDataCheckbox.checked) {
         const projectData = collectProjectData();
@@ -728,16 +734,21 @@ async function generateTemplate() {
     }
     
     const finalDefs = defs ? `<defs>${defs}</defs>` : '';
-    const svgContentForPreview = `<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" ${mainFillForPreview} stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${faceArtTag}${backArtTag}<rect x="${faceBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/><rect x="${backBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/></svg>`;
-    svgForDesign = `${projectMetadata}<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" ${mainFillForDownload} stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${faceArtTag}${backArtTag}</svg>`;
     
-    // 7. Update UI
+    // For preview: always show full checkerboard background as base layer for all modes
+    const svgContentForPreview = `<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" fill="url(#checkerboard)" stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${backgroundElement}${faceArtTag}${backArtTag}<rect x="${faceBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/><rect x="${backBoxX.toFixed(2)}" y="${boxY.toFixed(2)}" width="${boxWidth.toFixed(2)}" height="${boxHeight.toFixed(2)}" fill="none" stroke="#4f46e5" stroke-width="1" stroke-dasharray="4 4"/></svg>`;
+    
+    // For download version: main path is always transparent, background only in cylindrical area when not transparent
+    const downloadBackgroundElement = selectedBgType === 'transparent' ? '' : backgroundElement;
+    svgForDesign = `${projectMetadata}<svg width="${width.toFixed(2)}mm" height="${mainHeight.toFixed(2)}mm" viewBox="0 0 ${width.toFixed(2)} ${mainHeight.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${finalDefs}<path d="${pathData}" fill="none" stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"/>${downloadBackgroundElement}${faceArtTag}${backArtTag}</svg>`;
+    
+    // 8. Update UI
     svgContainer.innerHTML = svgContentForPreview;
     infoDiv.innerHTML = `Calculated Circumference: <strong class="text-indigo-600">${width.toFixed(2)} mm</strong><br>Total Template Size: <strong class="text-indigo-600">${width.toFixed(2)} x ${mainHeight.toFixed(2)} mm</strong>`;
     downloadDesignBtn.disabled = false;
     downloadCutoutBtn.disabled = false;
     
-    // 8. Update 3D view if active
+    // 9. Update 3D view if active
     if (isCurrentView3D) {
         update3DMug();
     }
