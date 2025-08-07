@@ -2,9 +2,30 @@
 
 // === CONSTANTS ===
 export const GOOGLE_FONTS = [
-    "Roboto", "Open Sans", "Lato", "Montserrat", "Oswald", 
-    "Source Sans Pro", "Slabo 27px", "Raleway", "PT Sans", 
-    "Merriweather", "Lobster", "Pacifico", "Caveat"
+    "Roboto",
+    "Open Sans",
+    "Lato",
+    "Source Sans Pro",
+    "Slabo 27px",
+    "Raleway",
+    "PT Sans", 
+    "Merriweather",
+    "Caveat",
+    "Inter",
+    "Montserrat",
+    "Playfair Display",
+    "Oswald",
+    "Pacifico",
+    "Comfortaa",
+    "Lobster",
+    "Cormorant Garamond",
+    "Amatic SC",
+    "Anton",
+    "Abril Fatface",
+    "Permanent Marker",
+    "Rock Salt",
+    "Creepster",
+    "Nosifier"
 ];
 
 // === GLOBAL STATE ===
