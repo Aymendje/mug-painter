@@ -242,12 +242,19 @@ async function createArtElement(type, x, y, w, h) {
         const finalFontSize = 100 * scale;
         const transform = `translate(${x + w / 2}, ${y + h / 2})`;
         
-        // Build stroke attributes for contour
-        const strokeAttributes = isContour 
-            ? `stroke="${contourColor}" stroke-width="2"` 
-            : '';
+        // Create text content for reuse
+        const textContent = lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('');
+        const textAttributes = `x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" dominant-baseline="middle" text-anchor="middle" transform="${transform}"`;
         
-        return `<text x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" fill="${color}" ${strokeAttributes} dominant-baseline="middle" text-anchor="middle" transform="${transform}">${lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('')}</text>`;
+        if (isContour) {
+            // Create outlined text using two text elements: stroke underneath, fill on top
+            return `<g>
+                <text ${textAttributes} fill="none" stroke="${contourColor}" stroke-width="4" stroke-linejoin="round">${textContent}</text>
+                <text ${textAttributes} fill="${color}">${textContent}</text>
+            </g>`;
+        } else {
+            return `<text ${textAttributes} fill="${color}">${textContent}</text>`;
+        }
     }
     return '';
 }
