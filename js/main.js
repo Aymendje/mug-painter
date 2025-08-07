@@ -1,6 +1,7 @@
 // main.js - Application initialization and global function setup
 
 import { state, dom } from './config.js';
+import { randomProjectName } from './project-manager.js';
 import { generateTemplate } from './template-generator.js';
 import { loadGoogleFonts, prefetchAllFonts } from './font-manager.js';
 import { setupEventListeners } from './event-handlers.js';
@@ -54,6 +55,9 @@ function initializeApplication() {
     
     // Update initial UI state
     updateInitialControlsVisibility();
+
+    // Initiate random project name
+    randomProjectName();
     
     console.log('Mug Painter application initialized successfully');
 }

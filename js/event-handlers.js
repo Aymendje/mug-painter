@@ -135,6 +135,28 @@ export function setupEventListeners() {
         generateTemplate(); 
     });
 
+    // Face text flip button
+    if (dom.faceFlipTextBtn) {
+        dom.faceFlipTextBtn.addEventListener('click', () => { 
+            state.isFaceTextFlipped = !state.isFaceTextFlipped; 
+            toggleButtonState(dom.faceFlipTextBtn, state.isFaceTextFlipped); 
+            generateTemplate(); 
+        });
+    } else {
+        console.error('faceFlipTextBtn element not found');
+    }
+
+    // Face contour thickness slider
+    if (dom.faceContourThickness && dom.faceContourThicknessValue) {
+        dom.faceContourThickness.addEventListener('input', () => {
+            state.faceContourThickness = parseInt(dom.faceContourThickness.value);
+            dom.faceContourThicknessValue.textContent = state.faceContourThickness;
+            generateTemplate();
+        });
+    } else {
+        console.error('Face contour thickness elements not found');
+    }
+
     // === BACK ARTWORK LISTENERS ===
     // Image controls
     dom.uploadBackBtn.addEventListener('click', () => dom.backImageInput.click());
@@ -183,6 +205,28 @@ export function setupEventListeners() {
         dom.backContourControls.classList.toggle('hidden', !state.isBackContour); 
         generateTemplate(); 
     });
+
+    // Back text flip button
+    if (dom.backFlipTextBtn) {
+        dom.backFlipTextBtn.addEventListener('click', () => { 
+            state.isBackTextFlipped = !state.isBackTextFlipped; 
+            toggleButtonState(dom.backFlipTextBtn, state.isBackTextFlipped); 
+            generateTemplate(); 
+        });
+    } else {
+        console.error('backFlipTextBtn element not found');
+    }
+
+    // Back contour thickness slider
+    if (dom.backContourThickness && dom.backContourThicknessValue) {
+        dom.backContourThickness.addEventListener('input', () => {
+            state.backContourThickness = parseInt(dom.backContourThickness.value);
+            dom.backContourThicknessValue.textContent = state.backContourThickness;
+            generateTemplate();
+        });
+    } else {
+        console.error('Back contour thickness elements not found');
+    }
 
     // === BACKGROUND CONTROLS ===
     dom.bgUploadBtn.addEventListener('click', () => dom.bgImageUploadInput.click());

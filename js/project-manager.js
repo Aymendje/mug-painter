@@ -1,6 +1,7 @@
 // project-manager.js - Project save/load functionality with metadata handling
 
 import { state, dom } from './config.js';
+import getRandomName from 'https://cdn.jsdelivr.net/gh/shamrin/namesgenerator@master/namesgenerator.js';
 
 // === PROJECT DATA COLLECTION ===
 export function collectProjectData() {
@@ -40,7 +41,9 @@ export function collectProjectData() {
             underline: state.isFaceUnderline,
             strikethrough: state.isFaceStrikethrough,
             contour: state.isFaceContour,
-            contourColor: dom.faceContourColorPicker.value
+            contourColor: dom.faceContourColorPicker.value,
+            textFlipped: state.isFaceTextFlipped,
+            contourThickness: state.faceContourThickness
         },
         
         // Back artwork settings
@@ -58,7 +61,9 @@ export function collectProjectData() {
             underline: state.isBackUnderline,
             strikethrough: state.isBackStrikethrough,
             contour: state.isBackContour,
-            contourColor: dom.backContourColorPicker.value
+            contourColor: dom.backContourColorPicker.value,
+            textFlipped: state.isBackTextFlipped,
+            contourThickness: state.backContourThickness
         }
     };
     
@@ -146,6 +151,8 @@ function loadFaceArtData(face) {
     state.isFaceStrikethrough = face.strikethrough || false;
     state.isFaceContour = face.contour || false;
     dom.faceContourColorPicker.value = face.contourColor || '#000000';
+    state.isFaceTextFlipped = face.textFlipped || false;
+    state.faceContourThickness = face.contourThickness || 2;
 }
 
 // === BACK ART DATA LOADING ===
@@ -170,6 +177,8 @@ function loadBackArtData(back) {
     state.isBackStrikethrough = back.strikethrough || false;
     state.isBackContour = back.contour || false;
     dom.backContourColorPicker.value = back.contourColor || '#000000';
+    state.isBackTextFlipped = back.textFlipped || false;
+    state.backContourThickness = back.contourThickness || 2;
 }
 
 // === BUTTON STATE UPDATES ===
@@ -181,6 +190,9 @@ function updateFormattingButtonStates() {
     toggleButtonState(dom.faceStrikethroughBtn, state.isFaceStrikethrough);
     toggleButtonState(dom.faceContourBtn, state.isFaceContour);
     dom.faceContourControls.classList.toggle('hidden', !state.isFaceContour);
+    toggleButtonState(dom.faceFlipTextBtn, state.isFaceTextFlipped);
+    dom.faceContourThickness.value = state.faceContourThickness;
+    dom.faceContourThicknessValue.textContent = state.faceContourThickness;
     
     // Update back formatting buttons
     toggleButtonState(dom.backBoldBtn, state.isBackBold);
@@ -189,6 +201,9 @@ function updateFormattingButtonStates() {
     toggleButtonState(dom.backStrikethroughBtn, state.isBackStrikethrough);
     toggleButtonState(dom.backContourBtn, state.isBackContour);
     dom.backContourControls.classList.toggle('hidden', !state.isBackContour);
+    toggleButtonState(dom.backFlipTextBtn, state.isBackTextFlipped);
+    dom.backContourThickness.value = state.backContourThickness;
+    dom.backContourThicknessValue.textContent = state.backContourThickness;
 }
 
 // === CUSTOM DROPDOWN UPDATES ===
@@ -277,4 +292,9 @@ export function processProjectFile(event) {
         };
         reader.readAsText(file);
     }
+}
+
+export function randomProjectName() {
+    let name = getRandomName().replace(/[^a-zA-Z0-9-]/g, '-');
+    dom.projectNameInput.value = name;
 }

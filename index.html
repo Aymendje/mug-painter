@@ -43,7 +43,7 @@
                     <div class="input-group">
                         <label for="projectName" class="font-medium text-sm text-slate-700">Enter a filename for your project.</label>
                         <div class="flex gap-2">
-                            <input type="text" id="projectName" value="my-mug-design" class="input-field flex-grow">
+                            <input type="text" id="projectName" value="" class="input-field flex-grow">
                             <input type="file" id="loadProjectInput" class="hidden" accept=".svg,.mugproj">
                             <button id="loadProjectBtn" class="btn btn-secondary" title="Load Project">
                                 📁 Load
@@ -158,12 +158,22 @@
                                     <button id="backBoldBtn" class="btn btn-secondary btn-icon" title="Bold"><b>B</b></button>
                                     <button id="backItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
                                     <button id="backUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
-                                    <button id="backStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
-                                    <button id="backContourBtn" class="btn btn-secondary btn-icon" title="Contour">C</button>
                                 </div>
-                                <div id="back-contour-controls" class="hidden flex gap-2 justify-center items-center mt-2">
-                                    <label class="font-medium text-sm text-slate-700">Contour Color:</label>
-                                    <input type="color" id="backContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                <div class="flex gap-2 justify-center">
+                                    <button id="backStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                    <button id="backContourBtn" class="btn btn-secondary btn-icon" title="Contour"><img src="https://www.svgrepo.com/download/403767/letter-c.svg" class="w-4 h-4" alt="Contour"></button>
+                                    <button id="backFlipTextBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-4 h-4" alt="Flip"></button>
+                                </div>
+                                <div id="back-contour-controls" class="hidden flex flex-col gap-2 justify-center items-center mt-2">
+                                    <div class="flex gap-2 items-center">
+                                        <label class="font-medium text-sm text-slate-700">Contour Color:</label>
+                                        <input type="color" id="backContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                    </div>
+                                    <div class="flex gap-2 items-center">
+                                        <label class="font-medium text-sm text-slate-700">Thickness:</label>
+                                        <input type="range" id="backContourThickness" min="1" max="10" value="2" class="w-24">
+                                        <span id="backContourThicknessValue" class="text-sm text-slate-600 w-6">2</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -203,12 +213,22 @@
                                     <button id="faceBoldBtn" class="btn btn-secondary btn-icon" title="Bold"><b>B</b></button>
                                     <button id="faceItalicBtn" class="btn btn-secondary btn-icon" title="Italic"><i>I</i></button>
                                     <button id="faceUnderlineBtn" class="btn btn-secondary btn-icon" title="Underline"><u>U</u></button>
-                                    <button id="faceStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
-                                    <button id="faceContourBtn" class="btn btn-secondary btn-icon" title="Contour">C</button>
                                 </div>
-                                <div id="face-contour-controls" class="hidden flex gap-2 justify-center items-center mt-2">
-                                    <label class="font-medium text-sm text-slate-700">Contour Color:</label>
-                                    <input type="color" id="faceContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                <div class="flex gap-2 justify-center">
+                                    <button id="faceStrikethroughBtn" class="btn btn-secondary btn-icon" title="Strikethrough"><s>S</s></button>
+                                    <button id="faceContourBtn" class="btn btn-secondary btn-icon" title="Contour"><img src="https://www.svgrepo.com/download/403767/letter-c.svg" class="w-4 h-4" alt="Contour"></button>
+                                    <button id="faceFlipTextBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-4 h-4" alt="Flip"></button>
+                                </div>
+                                <div id="face-contour-controls" class="hidden flex flex-col gap-2 justify-center items-center mt-2">
+                                    <div class="flex gap-2 items-center">
+                                        <label class="font-medium text-sm text-slate-700">Contour Color:</label>
+                                        <input type="color" id="faceContourColorPicker" value="#000000" class="h-8 w-16 border-gray-300 rounded-md p-1 cursor-pointer">
+                                    </div>
+                                    <div class="flex gap-2 items-center">
+                                        <label class="font-medium text-sm text-slate-700">Thickness:</label>
+                                        <input type="range" id="faceContourThickness" min="1" max="10" value="2" class="w-24">
+                                        <span id="faceContourThicknessValue" class="text-sm text-slate-600 w-6">2</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -199,6 +199,8 @@ function createTextArtElement(type, x, y, w, h) {
     const isContour = type === 'face' ? state.isFaceContour : state.isBackContour;
     const contourColorPicker = type === 'face' ? dom.faceContourColorPicker : dom.backContourColorPicker;
     const contourColor = contourColorPicker.value;
+    const contourThickness = type === 'face' ? state.faceContourThickness : state.backContourThickness;
+    const isTextFlipped = type === 'face' ? state.isFaceTextFlipped : state.isBackTextFlipped;
     
     // Build style attributes
     const fontWeight = isBold ? '700' : '400';
@@ -242,14 +244,15 @@ function createTextArtElement(type, x, y, w, h) {
 
     const scale = Math.min(w / bbox.width, h / bbox.height);
     const finalFontSize = 100 * scale;
-    const transform = `translate(${x + w / 2}, ${y + h / 2})`;
+    const flipTransform = isTextFlipped ? 'scale(-1, 1)' : '';
+    const transform = `translate(${x + w / 2}, ${y + h / 2}) ${flipTransform}`;
     const textContent = lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('');
     const textAttributes = `x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" dominant-baseline="middle" text-anchor="middle" transform="${transform}"`;
     
     if (isContour) {
         // Create outlined text using two text elements: stroke underneath, fill on top
         return `<g>
-            <text ${textAttributes} fill="none" stroke="${contourColor}" stroke-width="4" stroke-linejoin="round">${textContent}</text>
+            <text ${textAttributes} fill="none" stroke="${contourColor}" stroke-width="${contourThickness}" stroke-linejoin="round">${textContent}</text>
             <text ${textAttributes} fill="${color}">${textContent}</text>
         </g>`;
     } else {

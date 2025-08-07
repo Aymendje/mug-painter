@@ -54,6 +54,8 @@ export const state = {
     isFaceUnderline: false,
     isFaceStrikethrough: false,
     isFaceContour: false,
+    isFaceTextFlipped: false,
+    faceContourThickness: 2,
     
     // Text formatting states - Back
     isBackBold: false,
@@ -61,6 +63,8 @@ export const state = {
     isBackUnderline: false,
     isBackStrikethrough: false,
     isBackContour: false,
+    isBackTextFlipped: false,
+    backContourThickness: 2,
     
     // Font selection
     selectedFaceFont: 'Roboto',
@@ -120,6 +124,9 @@ export const dom = {
     faceContourBtn: document.getElementById('faceContourBtn'),
     faceContourControls: document.getElementById('face-contour-controls'),
     faceContourColorPicker: document.getElementById('faceContourColorPicker'),
+    faceContourThickness: document.getElementById('faceContourThickness'),
+    faceContourThicknessValue: document.getElementById('faceContourThicknessValue'),
+    faceFlipTextBtn: document.getElementById('faceFlipTextBtn'),
     
     // Back artwork controls
     backArtTypeRadios: document.querySelectorAll('input[name="backArtType"]'),
@@ -143,6 +150,9 @@ export const dom = {
     backContourBtn: document.getElementById('backContourBtn'),
     backContourControls: document.getElementById('back-contour-controls'),
     backContourColorPicker: document.getElementById('backContourColorPicker'),
+    backContourThickness: document.getElementById('backContourThickness'),
+    backContourThicknessValue: document.getElementById('backContourThicknessValue'),
+    backFlipTextBtn: document.getElementById('backFlipTextBtn'),
     
     // Background controls
     bgTypeRadios: document.querySelectorAll('input[name="backgroundType"]'),
