@@ -236,10 +236,13 @@ async function createArtElement(type, x, y, w, h) {
         textNode.setAttribute('font-size', '100'); // Large size for accurate measurement
         textNode.setAttribute('font-weight', fontWeight);
         textNode.setAttribute('font-style', fontStyle);
+        textNode.setAttribute('dominant-baseline', 'middle');
+        textNode.setAttribute('text-anchor', 'middle');
         lines.forEach((line, i) => {
             const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
             tspan.textContent = line;
             tspan.setAttribute('x', '0');
+            tspan.setAttribute('dy', i === 0 ? `-${(lines.length-1)*0.6}em` : '1.2em');
             textNode.appendChild(tspan);
         });
         tempSvg.appendChild(textNode);
