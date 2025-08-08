@@ -16,10 +16,6 @@
 - [ ] **Shadow Quality** - Implement higher quality shadow rendering options
 - [ ] **Mug Variations** - Support different mug shapes and handle styles
 
-### Browser Compatibility
-- [ ] **Safari Fixes** - Address Safari-specific rendering issues
-- [ ] **Mobile Browser Support** - Test and optimize for mobile browsers
-
 ### History and Saves
 - [ ] **Cloud Storage Integration** - Save/sync projects to Google Drive, Dropbox
 - [ ] **Version History** - Track and restore previous versions of projects
