@@ -44,8 +44,6 @@ export function init3DScene() {
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(2, 2); // Much bigger squares - only 2x2 repeat
     
-    console.log('Checkered background created');
-    
     state.scene.background = texture;
     
     // Create camera
@@ -531,10 +529,7 @@ function createLipGeometry(outerTopRadius, innerTopRadius, mugHeight) {
 
 // === TEXTURE CREATION ===
 export async function createMugTexture(svgForDesign) {
-    console.log('Creating mug texture...');
-    
     if (!svgForDesign) {
-        console.warn('No SVG design available for texture');
         return null;
     }
     
@@ -545,14 +540,19 @@ export async function createMugTexture(svgForDesign) {
         'stroke="none"'
     );
     
-    // Create a canvas to render SVG as texture
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    // Create two canvases: one for SVG->PNG conversion, one for flipping
+    const svgCanvas = document.createElement('canvas');
+    const svgCtx = svgCanvas.getContext('2d');
+    const flipCanvas = document.createElement('canvas');
+    const flipCtx = flipCanvas.getContext('2d');
     
     // Get dimensions from svg-preview instead of hardcoding
     const previewRect = dom.svgPreview.getBoundingClientRect();
-    canvas.width = previewRect.width > 0 ? previewRect.width : 1024;
-    canvas.height = previewRect.height > 0 ? previewRect.height : 512;
+    const width = previewRect.width > 0 ? previewRect.width : 1024;
+    const height = previewRect.height > 0 ? previewRect.height : 512;
+    
+    svgCanvas.width = flipCanvas.width = width;
+    svgCanvas.height = flipCanvas.height = height;
     
     // Create image from SVG
     const img = new Image();
@@ -561,8 +561,6 @@ export async function createMugTexture(svgForDesign) {
     
     return new Promise(async (resolve) => {
         img.onload = async () => {
-            console.log('SVG loaded for texture');
-            
             try {
                 // Wait for fonts to be ready in the document
                 await document.fonts.ready;
@@ -570,28 +568,34 @@ export async function createMugTexture(svgForDesign) {
                 // Additional small delay to ensure SVG fonts are applied
                 await new Promise(resolve => setTimeout(resolve, 50));
                 
-                // Draw SVG to canvas
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // Step 1: Render SVG to first canvas (PNG conversion)
+                svgCtx.fillStyle = '#ffffff';
+                svgCtx.fillRect(0, 0, width, height);
+                svgCtx.drawImage(img, 0, 0, width, height);
                 
-                // Create Three.js texture
-                const texture = new THREE.CanvasTexture(canvas);
+                // Step 2: Flip the PNG horizontally on second canvas
+                flipCtx.fillStyle = '#ffffff';
+                flipCtx.fillRect(0, 0, width, height);
+                flipCtx.save();
+                flipCtx.translate(width, 0);
+                flipCtx.scale(-1, 1);
+                flipCtx.drawImage(svgCanvas, 0, 0);
+                flipCtx.restore();
+                
+                // Create Three.js texture from flipped canvas
+                const texture = new THREE.CanvasTexture(flipCanvas);
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
                 
                 URL.revokeObjectURL(url);
-                console.log('Texture created successfully with fonts');
                 resolve(texture);
             } catch (err) {
-                console.error('Error drawing SVG to canvas:', err);
                 URL.revokeObjectURL(url);
                 resolve(null);
             }
         };
         
-        img.onerror = (err) => {
-            console.error('Error loading SVG for texture:', err);
+        img.onerror = () => {
             URL.revokeObjectURL(url);
             resolve(null);
         };
@@ -617,11 +621,8 @@ export function stopMugRotation() {
 // === 3D MUG UPDATE ===
 export async function update3DMug() {
     if (!state.isCurrentView3D || !state.scene) {
-        console.log('Not in 3D view or no scene');
         return;
     }
-    
-    console.log('Updating 3D mug...');
     
     const height = parseFloat(dom.heightInput.value);
     const diameter = parseFloat(dom.diameterInput.value);

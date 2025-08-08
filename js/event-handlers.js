@@ -8,7 +8,8 @@ import {
     renderAndDownloadPNG, 
     renderAndDownloadPDF, 
     generateAndDownloadCutout, 
-    handleImageUpload 
+    handleImageUpload,
+    removeImageBackground
 } from './export-manager.js';
 import { 
     toggleButtonState, 
@@ -88,8 +89,26 @@ export function setupEventListeners() {
 
     // === FACE ARTWORK LISTENERS ===
     // Image controls
-    dom.uploadFaceBtn.addEventListener('click', () => dom.faceImageInput.click());
-    dom.faceImageInput.addEventListener('change', (e) => handleImageUpload(e, 'face'));
+    if (dom.uploadFaceBtn) {
+        dom.uploadFaceBtn.addEventListener('click', () => {
+            if (dom.faceImageInput) {
+                dom.faceImageInput.click();
+            }
+        });
+    }
+    
+    if (dom.faceImageInput) {
+        dom.faceImageInput.addEventListener('change', (e) => {
+            handleImageUpload(e, 'face');
+        });
+    }
+    
+    // Background removal
+    if (dom.removeBackgroundFaceBtn) {
+        dom.removeBackgroundFaceBtn.addEventListener('click', () => {
+            removeImageBackground('face');
+        });
+    }
     dom.flipFaceHBtn.addEventListener('click', () => { 
         state.isFaceFlippedH = !state.isFaceFlippedH; 
         generateTemplate(); 
@@ -153,14 +172,30 @@ export function setupEventListeners() {
             dom.faceContourThicknessValue.textContent = state.faceContourThickness;
             generateTemplate();
         });
-    } else {
-        console.error('Face contour thickness elements not found');
     }
 
     // === BACK ARTWORK LISTENERS ===
     // Image controls
-    dom.uploadBackBtn.addEventListener('click', () => dom.backImageInput.click());
-    dom.backImageInput.addEventListener('change', (e) => handleImageUpload(e, 'back'));
+    if (dom.uploadBackBtn) {
+        dom.uploadBackBtn.addEventListener('click', () => {
+            if (dom.backImageInput) {
+                dom.backImageInput.click();
+            }
+        });
+    }
+    
+    if (dom.backImageInput) {
+        dom.backImageInput.addEventListener('change', (e) => {
+            handleImageUpload(e, 'back');
+        });
+    }
+    
+    // Background removal
+    if (dom.removeBackgroundBackBtn) {
+        dom.removeBackgroundBackBtn.addEventListener('click', () => {
+            removeImageBackground('back');
+        });
+    }
     dom.flipBackHBtn.addEventListener('click', () => { 
         state.isBackFlippedH = !state.isBackFlippedH; 
         generateTemplate(); 
@@ -224,8 +259,6 @@ export function setupEventListeners() {
             dom.backContourThicknessValue.textContent = state.backContourThickness;
             generateTemplate();
         });
-    } else {
-        console.error('Back contour thickness elements not found');
     }
 
     // === BACKGROUND CONTROLS ===
@@ -259,5 +292,4 @@ export function setupEventListeners() {
     dom.view2DBtn.addEventListener('click', switch2DView);
     dom.view3DBtn.addEventListener('click', switch3DView);
 
-    console.log('All event listeners setup complete');
 }

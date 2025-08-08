@@ -293,6 +293,74 @@ async function createCutoutSVG(pngDataUrl, filename, svgWidth, svgHeight) {
     triggerDownload(finalMaskSvg, filename);
 }
 
+// === BACKGROUND REMOVAL ===
+export function removeImageBackground(imageType) {
+    const imageData = imageType === 'face' ? state.uploadedFaceImage : state.uploadedBackImage;
+    if (!imageData) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const canvasImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = canvasImageData.data;
+        
+        // Simple background removal: make similar colors to corners transparent
+        // Sample corner colors to determine likely background
+        const cornerSamples = [
+            {r: data[0], g: data[1], b: data[2]}, // top-left
+            {r: data[(canvas.width - 1) * 4], g: data[(canvas.width - 1) * 4 + 1], b: data[(canvas.width - 1) * 4 + 2]}, // top-right
+            {r: data[(canvas.height - 1) * canvas.width * 4], g: data[(canvas.height - 1) * canvas.width * 4 + 1], b: data[(canvas.height - 1) * canvas.width * 4 + 2]}, // bottom-left
+            {r: data[((canvas.height - 1) * canvas.width + (canvas.width - 1)) * 4], g: data[((canvas.height - 1) * canvas.width + (canvas.width - 1)) * 4 + 1], b: data[((canvas.height - 1) * canvas.width + (canvas.width - 1)) * 4 + 2]} // bottom-right
+        ];
+        
+        // Use the most common corner color as background
+        const bgColor = cornerSamples[0]; // Simplified: use top-left corner
+        const tolerance = 30; // Adjust tolerance for background detection
+        
+        // Remove background pixels
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            // Check if pixel is similar to background color
+            const colorDiff = Math.sqrt(
+                Math.pow(r - bgColor.r, 2) +
+                Math.pow(g - bgColor.g, 2) +
+                Math.pow(b - bgColor.b, 2)
+            );
+            
+            if (colorDiff < tolerance) {
+                data[i + 3] = 0; // Make transparent
+            }
+        }
+        
+        ctx.putImageData(canvasImageData, 0, 0);
+        
+        // Convert back to data URL and update state
+        const processedDataUrl = canvas.toDataURL('image/png');
+        
+        if (imageType === 'face') {
+            state.uploadedFaceImage = processedDataUrl;
+        } else {
+            state.uploadedBackImage = processedDataUrl;
+        }
+        
+        // Regenerate template
+        if (window.generateTemplate) {
+            window.generateTemplate();
+        }
+    };
+    
+    img.src = imageData;
+}
+
 // === IMAGE UPLOAD HANDLER ===
 export function handleImageUpload(event, imageType) {
     const file = event.target.files[0];
@@ -311,9 +379,15 @@ export function handleImageUpload(event, imageType) {
                     dataUrl: `data:image/svg+xml;base64,${btoa(svgContent)}`
                 };
                 
-                if (imageType === 'face') state.uploadedFaceImage = vectorData.dataUrl;
-                if (imageType === 'back') state.uploadedBackImage = vectorData.dataUrl;
-                if (imageType === 'bg') state.uploadedBgImageData = vectorData.dataUrl;
+                if (imageType === 'face') {
+                    state.uploadedFaceImage = vectorData.dataUrl;
+                    // SVG background removal not supported, keep button disabled
+                } else if (imageType === 'back') {
+                    state.uploadedBackImage = vectorData.dataUrl;
+                    // SVG background removal not supported, keep button disabled
+                } else if (imageType === 'bg') {
+                    state.uploadedBgImageData = vectorData.dataUrl;
+                }
                 
                 if (window.generateTemplate) {
                     window.generateTemplate();
@@ -323,9 +397,21 @@ export function handleImageUpload(event, imageType) {
         } else {
             // For raster images (JPG, PNG, etc.), use data URL as before
             reader.onload = (e) => {
-                if (imageType === 'face') state.uploadedFaceImage = e.target.result;
-                if (imageType === 'back') state.uploadedBackImage = e.target.result;
-                if (imageType === 'bg') state.uploadedBgImageData = e.target.result;
+                if (imageType === 'face') {
+                    state.uploadedFaceImage = e.target.result;
+                    // Enable background removal button for raster images
+                    if (dom.removeBackgroundFaceBtn) {
+                        dom.removeBackgroundFaceBtn.disabled = false;
+                    }
+                } else if (imageType === 'back') {
+                    state.uploadedBackImage = e.target.result;
+                    // Enable background removal button for raster images
+                    if (dom.removeBackgroundBackBtn) {
+                        dom.removeBackgroundBackBtn.disabled = false;
+                    }
+                } else if (imageType === 'bg') {
+                    state.uploadedBgImageData = e.target.result;
+                }
                 
                 if (window.generateTemplate) {
                     window.generateTemplate();

@@ -132,7 +132,10 @@
                             </div>
                             <div id="back-image-controls" class="hidden space-y-3">
                                 <input type="file" id="backImageInput" class="hidden" accept="image/*,.svg">
-                                <button id="uploadBackBtn" class="btn btn-secondary w-full">Upload</button>
+                                <div class="flex gap-2">
+                                    <button id="uploadBackBtn" class="btn btn-secondary flex-grow">Upload</button>
+                                    <button id="removeBackgroundBackBtn" class="btn btn-secondary btn-icon" title="Remove Background" disabled>🪄</button>
+                                </div>
                                 <div class="flex gap-2 justify-center">
                                     <button id="flipBackHBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-5 h-5" alt="Flip Horizontal"></button>
                                     <button id="flipBackVBtn" class="btn btn-secondary btn-icon" title="Flip Vertical"><img src="https://www.svgrepo.com/download/509932/flip-vertical.svg" class="w-5 h-5" alt="Flip Vertical"></button>
@@ -187,7 +190,10 @@
                             </div>
                             <div id="face-image-controls" class="hidden space-y-3">
                                 <input type="file" id="faceImageInput" class="hidden" accept="image/*,.svg">
-                                <button id="uploadFaceBtn" class="btn btn-secondary w-full">Upload</button>
+                                <div class="flex gap-2">
+                                    <button id="uploadFaceBtn" class="btn btn-secondary flex-grow">Upload</button>
+                                    <button id="removeBackgroundFaceBtn" class="btn btn-secondary btn-icon" title="Remove Background" disabled>🪄</button>
+                                </div>
                                 <div class="flex gap-2 justify-center">
                                     <button id="flipFaceHBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-5 h-5" alt="Flip Horizontal"></button>
                                     <button id="flipFaceVBtn" class="btn btn-secondary btn-icon" title="Flip Vertical"><img src="https://www.svgrepo.com/download/509932/flip-vertical.svg" class="w-5 h-5" alt="Flip Vertical"></button>

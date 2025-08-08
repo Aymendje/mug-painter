@@ -105,6 +105,11 @@ export function loadProjectData(projectData) {
         updateCustomDropdowns();
         updateControlsVisibility();
         
+        // Update background removal button states
+        if (window.updateBackgroundRemovalButtons) {
+            window.updateBackgroundRemovalButtons();
+        }
+        
         // Regenerate template
         if (window.generateTemplate) {
             window.generateTemplate();
@@ -289,6 +294,9 @@ export function processProjectFile(event) {
             } else {
                 alert('No project data found in this file. Make sure the file was exported with project data enabled.');
             }
+            
+            // Reset the file input so the same file can be selected again
+            event.target.value = '';
         };
         reader.readAsText(file);
     }

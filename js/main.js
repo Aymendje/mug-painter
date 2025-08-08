@@ -10,6 +10,7 @@ import { CustomSelect } from './ui-components.js';
 // === GLOBAL FUNCTION ACCESS ===
 // Make generateTemplate available globally for cross-module access
 window.generateTemplate = generateTemplate;
+window.updateBackgroundRemovalButtons = updateBackgroundRemovalButtons;
 
 // === FONT DROPDOWN INITIALIZATION ===
 function initializeFontDropdowns() {
@@ -55,6 +56,9 @@ function initializeApplication() {
     
     // Update initial UI state
     updateInitialControlsVisibility();
+    
+    // Enable background removal buttons if images are already loaded
+    updateBackgroundRemovalButtons();
 
     // Initiate random project name
     randomProjectName();
@@ -76,6 +80,33 @@ function updateInitialControlsVisibility() {
     const selectedBackType = document.querySelector('input[name="backArtType"]:checked')?.value || 'transparent';
     dom.backImageControls.classList.toggle('hidden', selectedBackType !== 'image');
     dom.backTextControls.classList.toggle('hidden', selectedBackType !== 'text');
+}
+
+// === BACKGROUND REMOVAL BUTTON STATE ===
+function updateBackgroundRemovalButtons() {
+    // Enable face background removal if face image exists and is not SVG
+    if (state.uploadedFaceImage && dom.removeBackgroundFaceBtn) {
+        // More precise detection: check the MIME type specifically
+        const isRasterImage = state.uploadedFaceImage.startsWith('data:image/') && 
+                             !state.uploadedFaceImage.startsWith('data:image/svg+xml');
+        dom.removeBackgroundFaceBtn.disabled = !isRasterImage;
+    } else {
+        if (dom.removeBackgroundFaceBtn) {
+            dom.removeBackgroundFaceBtn.disabled = true;
+        }
+    }
+    
+    // Enable back background removal if back image exists and is not SVG
+    if (state.uploadedBackImage && dom.removeBackgroundBackBtn) {
+        // More precise detection: check the MIME type specifically
+        const isRasterImage = state.uploadedBackImage.startsWith('data:image/') && 
+                             !state.uploadedBackImage.startsWith('data:image/svg+xml');
+        dom.removeBackgroundBackBtn.disabled = !isRasterImage;
+    } else {
+        if (dom.removeBackgroundBackBtn) {
+            dom.removeBackgroundBackBtn.disabled = true;
+        }
+    }
 }
 
 // === START APPLICATION WHEN DOM IS READY ===
