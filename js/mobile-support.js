@@ -1,154 +1,82 @@
-// mobile-support.js - Mobile browser optimization and support
+// mobile-support.js - Lightweight mobile enhancements (non-intrusive)
 
-// === MOBILE DETECTION ===
+// === DETECTION ===
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-// Mobile viewport detection
 const isMobileViewport = () => window.innerWidth <= 768;
+const isIOS = (() => {
+  const ua = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const isAppleTouch = platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return /iPad|iPhone|iPod/.test(ua) || isAppleTouch;
+})();
 
-// === MOBILE OPTIMIZATION INITIALIZATION ===
+// === PUBLIC INIT ===
 export function initMobileSupport() {
-    if (!isMobile && !isTouchDevice && !isMobileViewport()) return;
-    
-    console.log('Mobile device detected, applying optimizations...');
-    
-    // Apply all mobile optimizations
+  if (!isTouchDevice && !isMobileViewport()) return;
+
+  try {
     optimizeViewport();
     optimizeUI();
     optimizeScrolling();
-    
-    // Setup responsive behavior
-    setupResponsiveUpdates();
-    
-    console.log('Mobile optimizations applied');
+  } catch (error) {
+    console.warn('Skipping some mobile enhancements:', error);
+  }
 }
 
-// === VIEWPORT OPTIMIZATION ===
+// === VIEWPORT ===
 function optimizeViewport() {
-    // Ensure proper viewport meta tag
-    let viewportMeta = document.querySelector('meta[name="viewport"]');
-    if (!viewportMeta) {
-        viewportMeta = document.createElement('meta');
-        viewportMeta.name = 'viewport';
-        document.head.appendChild(viewportMeta);
-    }
-    
-    // Mobile-optimized viewport settings
-    viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover';
-    
-    // Prevent zoom on form inputs (iOS Safari)
-    if (isIOS) {
-        const inputs = document.querySelectorAll('input, select, textarea');
-        inputs.forEach(input => {
-            if (!input.style.fontSize) {
-                input.style.fontSize = '16px';
-            }
-        });
-    }
+  // Ensure a viewport meta exists; do not override if present
+  let viewportMeta = document.querySelector('meta[name="viewport"]');
+  if (!viewportMeta) {
+    viewportMeta = document.createElement('meta');
+    viewportMeta.name = 'viewport';
+    viewportMeta.content = 'width=device-width, initial-scale=1.0';
+    document.head.appendChild(viewportMeta);
+  }
+
+  // Prevent zoom on input focus (iOS) by ensuring 16px font-size minimum
+  if (isIOS) {
+    const inputs = document.querySelectorAll('input, select, textarea');
+    inputs.forEach((el) => {
+      el.addEventListener('focus', () => {
+        const computed = window.getComputedStyle(el).fontSize;
+        const numeric = parseFloat(computed || '16');
+        if (Number.isFinite(numeric) && numeric < 16) {
+          el.style.fontSize = '16px';
+        }
+      }, { passive: true });
+    });
+  }
 }
 
-// === UI OPTIMIZATION ===
+// === UI TOUCH TARGETS ===
 function optimizeUI() {
-    // Add mobile-specific classes
-    document.body.classList.add('mobile-optimized');
-    if (isTouchDevice) document.body.classList.add('touch-device');
-    if (isIOS) document.body.classList.add('ios-device');
-    if (isAndroid) document.body.classList.add('android-device');
-    
-    // Optimize button sizes for touch
-    const buttons = document.querySelectorAll('button, .btn');
-    buttons.forEach(button => {
-        if (isMobile) {
-            button.style.minHeight = '44px'; // iOS guideline
-            button.style.minWidth = '44px';
-        }
-    });
-    
-    // Optimize form controls
-    const formControls = document.querySelectorAll('input, select, textarea');
-    formControls.forEach(control => {
-        if (isMobile) {
-            control.style.minHeight = '44px';
-            // Prevent zoom on focus (Android)
-            if (isAndroid) {
-                control.addEventListener('focus', () => {
-                    control.style.fontSize = '16px';
-                });
-            }
-        }
-    });
-    
-    // Add touch-friendly spacing
-    const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        if (isMobileViewport()) {
-            card.style.padding = '1rem';
-            card.style.margin = '0.5rem 0';
-        }
-    });
+  if (!isTouchDevice && !isMobileViewport()) return;
+
+  // Touch-friendly buttons
+  const buttons = document.querySelectorAll('button, .btn');
+  buttons.forEach((button) => {
+    if (!button.style.minHeight) button.style.minHeight = '44px';
+    if (!button.style.minWidth) button.style.minWidth = '44px';
+  });
+
+  // Comfortable form controls
+  const controls = document.querySelectorAll('input, select, textarea');
+  controls.forEach((control) => {
+    if (!control.style.minHeight) control.style.minHeight = '40px';
+  });
 }
 
-// === SCROLLING OPTIMIZATION ===
+// === SCROLLING ===
 function optimizeScrolling() {
-    // Enable smooth scrolling
-    document.documentElement.style.scrollBehavior = 'smooth';
-    
-    // Add momentum scrolling for iOS
-    if (isIOS) {
-        document.body.style.webkitOverflowScrolling = 'touch';
-    }
-    
-    // Optimize sticky elements for mobile
-    const stickyElements = document.querySelectorAll('.md\\:sticky');
-    stickyElements.forEach(element => {
-        if (isMobileViewport()) {
-            // Disable sticky on small screens to save space
-            element.style.position = 'static';
-            element.classList.add('mobile-static');
-        }
-    });
+  // Momentum scrolling on iOS for scrollable containers only (non-global)
+  if (!isIOS) return;
+  const scrollables = document.querySelectorAll(
+    'body, .overflow-auto, [class*="overflow-auto"], .overflow-scroll, [class*="overflow-scroll"]'
+  );
+  scrollables.forEach((el) => {
+    el.style.webkitOverflowScrolling = 'touch';
+  });
 }
 
-// === RESPONSIVE UPDATES ===
-function setupResponsiveUpdates() {
-    const updateResponsiveElements = () => {
-        const isMobileView = isMobileViewport();
-        
-        // Update navigation
-        const nav = document.querySelector('nav, .navigation');
-        if (nav) {
-            nav.classList.toggle('mobile-nav', isMobileView);
-        }
-        
-        // Update grid layouts
-        const grids = document.querySelectorAll('.grid, .flex');
-        grids.forEach(grid => {
-            if (isMobileView) {
-                grid.classList.add('mobile-stack');
-            } else {
-                grid.classList.remove('mobile-stack');
-            }
-        });
-    };
-    
-    // Initial call
-    updateResponsiveElements();
-    
-    // Update on resize
-    window.addEventListener('resize', updateResponsiveElements);
-}
 
-function updateScrollElements() {
-    // Update any elements that depend on scroll position
-    const scrollY = window.scrollY;
-    
-    // Update sticky elements on mobile
-    const mobileSticky = document.querySelectorAll('.mobile-static');
-    mobileSticky.forEach(element => {
-        if (scrollY > 100) {
-            element.classList.add('scrolled');
-        } else {
-            element.classList.remove('scrolled');
-        }
-    });
-}

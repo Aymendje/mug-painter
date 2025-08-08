@@ -3,10 +3,24 @@
 import { state, dom } from './config.js';
 import { collectProjectData } from './project-manager.js';
 import { safariImageLoad, safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
-import { getMobileOptimizedCanvasSize, isMobileDevice, getMobileCompressionLimit, hideMobileLoadingIndicator } from './mobile-support.js';
 import { getProjectMetadata } from './template-generator.js';
 import { canvasToPngWithMetadata } from './png-manager.js';
 import { compressImage } from './image-operations.js';
+
+// === Lightweight mobile helpers (no external dependency) ===
+function isMobileDevice() {
+    return ('ontouchstart' in window || navigator.maxTouchPoints > 0) || window.innerWidth <= 768;
+}
+
+function getOptimizedCanvasSize(width, height) {
+    const maxSide = isMobileDevice() ? 2048 : 4096;
+    const currentMax = Math.max(width, height);
+    if (currentMax <= maxSide) {
+        return { width, height };
+    }
+    const scale = maxSide / currentMax;
+    return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
 
 // === BASIC FILE DOWNLOAD TRIGGER ===
 export function triggerDownload(content, filename) {
@@ -52,16 +66,16 @@ export async function renderAndDownloadPNG(svgString, filename) {
     const svgWidth = widthMatch ? parseFloat(widthMatch[1]) : 800;
     const svgHeight = heightMatch ? parseFloat(heightMatch[1]) : 300;
     
-    // Convert to high-resolution canvas (mobile-optimized DPI)
-    const dpi = 300; // Lower DPI for mobile
+    // Convert to high-resolution canvas 
+    const dpi = 300;
     const scale = dpi / 25.4; // mm to inches
     let canvasWidth = Math.round(svgWidth * scale);
     let canvasHeight = Math.round(svgHeight * scale);
     
-    // Apply mobile canvas size limits
-    const mobileOptimized = getMobileOptimizedCanvasSize(canvasWidth, canvasHeight);
-    canvas.width = mobileOptimized.width;
-    canvas.height = mobileOptimized.height;
+    // Apply canvas size limits
+    const canvasSize = getOptimizedCanvasSize(canvasWidth, canvasHeight);
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
     
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     
@@ -376,26 +390,17 @@ export async function handleImageUpload(event, imageType) {
             reader.readAsText(file);
         } else {
             // For raster images, compress if needed
-            const compressionLimit = getMobileCompressionLimit();
+            const compressionLimit =  8 * 1024 * 1024; // 8MB
             const isLargeFile = file.size > compressionLimit;
             
             if (isLargeFile) {
                 // Show compression notice
                 console.log(`Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Compressing...`);
-                
-                // Show mobile loading indicator for large files on mobile
-                if (isMobileDevice()) {
-                    window.showMobileLoadingIndicator?.('Processing large image...');
-                }
             }
             
             try {
                 const imageDataUrl = await compressImage(file);
                 
-                // Hide mobile loading indicator
-                if (isMobileDevice()) {
-                    hideMobileLoadingIndicator();
-                }
                 
                 if (imageType === 'face') {
                     state.uploadedFaceImage = imageDataUrl;
@@ -423,18 +428,7 @@ export async function handleImageUpload(event, imageType) {
                 }
                 
             } catch (error) {
-                console.error('Error processing image:', error);
-                
-                // Hide mobile loading indicator on error
-                if (isMobileDevice()) {
-                    hideMobileLoadingIndicator();
-                }
-                
-                if (isMobileDevice()) {
-                    alert('Unable to process image on this device. Please try a smaller file.');
-                } else {
-                    alert('Error processing image. Please try a different file.');
-                }
+                console.error('Error processing image:', error);                
             }
         }
     }

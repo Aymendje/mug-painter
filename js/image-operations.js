@@ -1,6 +1,8 @@
 
 // === IMAGE COMPRESSION ===
-export async function compressImage(file, maxSizeBytes = getMobileCompressionLimit()) {
+const COMPRESSION_LIMIT = 8 * 1024 * 1024; // 8MB
+
+export async function compressImage(file, maxSizeBytes = COMPRESSION_LIMIT) {
     // If file is already under the limit, return as-is
     if (file.size <= maxSizeBytes) {
         return new Promise((resolve) => {
@@ -26,9 +28,9 @@ export async function compressImage(file, maxSizeBytes = getMobileCompressionLim
             // Calculate compression ratio based on file size
             const compressionRatio = Math.min(1, Math.sqrt(maxSizeBytes / file.size));
             
-            // Resize image dimensions (mobile-optimized)
-            const maxWidth = isMobileDevice() ? 1536 : 2048; // Smaller max for mobile
-            const maxHeight = isMobileDevice() ? 1536 : 2048;
+            // Resize image dimensions (conservative on mobile)
+            const maxWidth = 2048;
+            const maxHeight = 2048;
             
             let { width, height } = img;
             
