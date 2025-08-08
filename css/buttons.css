@@ -35,9 +35,25 @@
     background-color: #f1f5f9; /* slate-100 */
 }
 
-/* Small button style for 2D/3D toggle */
-.btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+.btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 2px #c7d2fe;
+}
+
+.btn:disabled {
+    background-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-primary:disabled {
+    background-color: #a5b4fc;
+    color: #e0e7ff;
+}
+
+.btn-secondary:disabled {
+    background-color: #f1f5f9;
+    color: #cbd5e1;
+    border-color: #e2e8f0;
 }

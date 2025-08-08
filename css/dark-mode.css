@@ -72,8 +72,15 @@ body.dark {
     border-color: #64748b; /* slate-500 */
 }
 
-.dark .btn-secondary:hover {
-    background-color: #64748b; /* slate-500 */
+.dark .btn-secondary:disabled {
+    background-color: #334155 !important;
+    color: #64748b !important;
+    border-color: #475569 !important;
+}
+
+.dark .btn-primary:disabled {
+    background-color: #3730a3 !important;
+    color: #a5b4fc !important;
 }
 
 /* Dark mode radio labels */

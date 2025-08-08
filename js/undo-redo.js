@@ -44,23 +44,41 @@ export function redo() {
 }
 
 /**
+ * Compares two project data objects, ignoring the timestamp.
+ * @param {object} objA - The first project data object.
+ * @param {object} objB - The second project data object.
+ * @returns {boolean} - True if the objects are equal, false otherwise.
+ */
+function areStatesEqual(objA, objB) {
+    const a = { ...objA, timestamp: null };
+    const b = { ...objB, timestamp: null };
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/**
  * Captures the current SVG state for undo and clears the redo stack.
  * Should be called before each template update.
  */
 export function captureUndoState() {
-  if (state.skipCapture) {
-    state.skipCapture = false;
-    return;
-  }
-  // Capture project data snapshot for undo
-  const data = collectProjectData();
-  state.undoStack.push(JSON.parse(JSON.stringify(data)));
-  if (state.undoStack.length > state.maxUndoStack) {
-    state.undoStack.shift();
-  }
-  // Clear redo history
-  state.redoStack = [];
-  updateUndoRedoButtons();
+    if (state.skipCapture) {
+        state.skipCapture = false;
+        return;
+    }
+
+    const data = collectProjectData();
+    const lastState = state.undoStack[state.undoStack.length - 1];
+
+    if (lastState && areStatesEqual(data, lastState)) {
+        return; // Don't capture if the state is the same as the last one
+    }
+
+    state.undoStack.push(JSON.parse(JSON.stringify(data)));
+    if (state.undoStack.length > state.maxUndoStack) {
+        state.undoStack.shift();
+    }
+
+    state.redoStack = [];
+    updateUndoRedoButtons();
 }
 
 /**
