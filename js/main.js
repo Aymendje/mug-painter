@@ -8,6 +8,7 @@ import { setupEventListeners } from './event-handlers.js';
 import { CustomSelect } from './ui-components.js';
 import { initSafariFixes } from './safari-fixes.js';
 import { initMobileSupport } from './mobile-support.js';
+import { initUndoRedo } from './undo-redo.js';
 
 // === GLOBAL FUNCTION ACCESS ===
 // Make generateTemplate available globally for cross-module access
@@ -54,6 +55,8 @@ function initializeApplication() {
     
     // Setup all event listeners
     setupEventListeners();
+    // Initialize undo/redo functionality
+    initUndoRedo();
     
     // Initialize font dropdowns with a delay to allow fonts to start loading
     setTimeout(() => {

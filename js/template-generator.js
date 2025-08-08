@@ -4,9 +4,12 @@ import { state, dom } from './config.js';
 import { loadAndEmbedFonts } from './font-manager.js';
 import { update3DMug } from './3d-engine.js';
 import { collectProjectData } from './project-manager.js';
+import { captureUndoState } from './undo-redo.js';
 
 // === MAIN TEMPLATE GENERATION ===
 export async function generateTemplate() {
+    // Capture current state for undo
+    captureUndoState();
     // 1. Get user inputs & dimensions
     const mainHeight = parseFloat(dom.heightInput.value);
     const diameter = parseFloat(dom.diameterInput.value);

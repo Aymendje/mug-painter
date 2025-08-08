@@ -83,7 +83,14 @@ export const state = {
     animationId: null,
     
     // Dropdown initialization
-    dropdownsInitialized: false
+    dropdownsInitialized: false,
+    // Undo/Redo state stacks
+    undoStack: [],
+    redoStack: [],
+    // Maximum number of undo states to retain
+    maxUndoStack: 100,
+    // Skip capturing undo state when restoring from undo/redo to avoid loops
+    skipCapture: false
 };
 
 // === DOM ELEMENTS ===
@@ -175,9 +182,11 @@ export const dom = {
     loadProjectBtn: document.getElementById('loadProjectBtn'),
     loadProjectInput: document.getElementById('loadProjectInput'),
     
-    // 3D view controls
+    // 3D view and Undo/Redo controls
     view2DBtn: document.getElementById('view2DBtn'),
-    view3DBtn: document.getElementById('view3DBtn')
+    view3DBtn: document.getElementById('view3DBtn'),
+    undoBtn: document.getElementById('undoBtn'),
+    redoBtn: document.getElementById('redoBtn')
 };
 
 // Helper function to get font selector elements with null checks

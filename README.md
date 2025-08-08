@@ -9,6 +9,7 @@ A professional web-based tool for creating custom sublimation mug wrap templates
 - **Real-time Preview** - See your design update instantly as you make changes  
 - **Guide Boxes** - Visual guides show safe artwork placement zones
 - **Dual View Modes** - Toggle between 2D template view and realistic 3D mug preview
+- **Undo/Redo** - Revert or reapply up to 100 previous design actions using the Undo/Redo buttons
 - **Multiple Export Formats** - SVG (vector), PNG (300 DPI), and PDF (Letter size)
 
 ### 🖼️ **Advanced Artwork Management**
