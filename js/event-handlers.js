@@ -9,13 +9,13 @@ import {
     renderAndDownloadPDF, 
     generateAndDownloadCutout, 
     handleImageUpload,
-    removeImageBackground
 } from './export-manager.js';
 import { 
     toggleButtonState, 
     handleProjectFileLoad, 
     processProjectFile 
 } from './project-manager.js';
+import { removeImageBackground } from './image-operations.js';
 
 // === UTILITY FUNCTIONS ===
 function updateControlsVisibility() {
