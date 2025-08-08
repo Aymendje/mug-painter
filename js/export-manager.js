@@ -4,6 +4,8 @@ import { state, dom } from './config.js';
 import { collectProjectData } from './project-manager.js';
 import { safariImageLoad, safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
 import { getMobileOptimizedCanvasSize, isMobileDevice, getMobileCompressionLimit, hideMobileLoadingIndicator } from './mobile-support.js';
+import { getProjectMetadata } from './template-generator.js';
+import { canvasToPngWithMetadata } from './png-manager.js';
 
 // === BASIC FILE DOWNLOAD TRIGGER ===
 export function triggerDownload(content, filename) {
@@ -64,25 +66,17 @@ export async function renderAndDownloadPNG(svgString, filename) {
     
     // Add project data if requested
     let finalFilename = filename;
-    if (dom.includeProjectDataCheckbox?.checked) {
-        try {
-            // For PNG, embed project data in filename and localStorage
-            const projectData = collectProjectData();
-            const encodedData = btoa(JSON.stringify(projectData));
-            
-            // Store project data in localStorage with filename-based key
-            const projectKey = `mugpainter_${filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-            localStorage.setItem(projectKey, encodedData);
-            
-            // Add marker to filename
-            finalFilename = filename.replace(/(\.[^.]+)$/, '_with_data$1');
-        } catch (error) {
-            console.warn('Could not embed project data in PNG:', error);
-        }
-    }
-    
+    const projectMetadata = getProjectMetadata();
+
+    // TODO embed projectMetadata in PNG
+    const outBlob = await canvasToPngWithMetadata(
+        canvas,
+        "projectMetadata",
+        projectMetadata // make sure this is a string; stringify if it's an object
+      );
+
     // Download PNG
-    const pngUrl = canvas.toDataURL('image/png');
+    const pngUrl = URL.createObjectURL(outBlob);
     const a = document.createElement('a');
     a.href = pngUrl;
     a.download = finalFilename;
@@ -91,7 +85,7 @@ export async function renderAndDownloadPNG(svgString, filename) {
     document.body.removeChild(a);
 }
 
-// === PDF EXPORT ===
+// === PDF EXPORT ===  
 export async function renderAndDownloadPDF(svgString, filename) {
     // Wait for all fonts to be ready before export (with Safari fixes)
     await document.fonts.ready;
@@ -167,25 +161,14 @@ export async function renderAndDownloadPDF(svgString, filename) {
             let finalFilename = filename;
             if (dom.includeProjectDataCheckbox?.checked) {
                 try {
-                    const projectData = collectProjectData();
-                    const encodedData = btoa(JSON.stringify(projectData));
-                    
                     // Add project data as PDF metadata
                     pdf.setProperties({
-                        title: `Mug Painter - ${projectData.projectName || 'Unnamed'}`,
+                        title: `Mug Painter - ${dom.projectNameInput.value || 'Unnamed'}`,
                         subject: 'Mug Wrap Template',
                         creator: 'Mug Painter',
-                        keywords: 'mug, wrap, template, sublimation',
-                        'MugPainterProjectData': encodedData
+                        keywords: getProjectMetadata()
                     });
-                    
-                    // Also store in localStorage as backup
-                    const projectKey = `mugpainter_${filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-                    localStorage.setItem(projectKey, encodedData);
-                    
-                    // Add marker to filename
-                    finalFilename = filename.replace(/(\.[^.]+)$/, '_with_data$1');
-                } catch (error) {
+                    } catch (error) {
                     console.warn('Could not embed project data in PDF fallback:', error);
                 }
             }

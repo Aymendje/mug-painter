@@ -2,6 +2,7 @@
 
 import { state, dom } from './config.js';
 import getRandomName from 'https://cdn.jsdelivr.net/gh/shamrin/namesgenerator@master/namesgenerator.js';
+import { parsePngMetadata } from './png-manager.js';
 
 // === PROJECT DATA COLLECTION ===
 export function collectProjectData() {
@@ -248,8 +249,8 @@ function updateControlsVisibility() {
 }
 
 // === SVG PROJECT DATA PARSING ===
-export function parseProjectFromSVG(svgContent) {
-    const metadataMatch = svgContent.match(/<!--MUG_PAINTER_PROJECT_DATA:([^:]+):END_PROJECT_DATA-->/);
+export function parseProjectFromMetadata(content) {
+    const metadataMatch = content.match(/<!--MUG_PAINTER_PROJECT_DATA:([^:]+):END_PROJECT_DATA-->/);
     if (metadataMatch) {
         try {
             const encodedData = metadataMatch[1];
@@ -261,6 +262,29 @@ export function parseProjectFromSVG(svgContent) {
         }
     }
     return null;
+}
+
+export function parseProjectFromSVG(arrayBuffer) {
+    const svgContent = new TextDecoder("utf-8").decode(arrayBuffer);
+    return parseProjectFromMetadata(svgContent);
+}
+
+export function parseProjectFromPNG(arrayBuffer) {
+    const metadataContent = parsePngMetadata(arrayBuffer);
+    return parseProjectFromMetadata(metadataContent);
+}
+
+export function parseProjectFromPDF(arrayBuffer) {
+    // jsPDF output is ASCII-safe, so Latin1 decoding is fine
+    const s = new TextDecoder("latin1").decode(arrayBuffer);
+
+    // Look for /Keywords ( ... ) form
+    const mLit = s.match(/\/Keywords\s*\((.*?)\)/s);
+    let metadataContent = null;
+    if (mLit) {
+        metadataContent = mLit[1];
+    }
+    return parseProjectFromMetadata(metadataContent);
 }
 
 // === BUTTON STATE TOGGLE UTILITY ===
@@ -285,58 +309,40 @@ export function processProjectFile(event) {
         const filename = file.name;
         const fileExtension = filename.split('.').pop().toLowerCase();
         
-        // Check if this is a file with embedded project data (PNG/PDF with '_with_data' suffix)
-        if ((fileExtension === 'png' || fileExtension === 'pdf') && filename.includes('_with_data')) {
-            // Try to load project data from localStorage based on filename
-            const baseName = filename.replace(/_with_data\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_');
-            const projectKey = `mugpainter_${baseName}`;
-            const storedData = localStorage.getItem(projectKey);
-            
-            if (storedData) {
-                try {
-                    const projectData = JSON.parse(atob(storedData));
-                    if (confirm('This file contains project data. Load it for editing?')) {
-                        loadProjectData(projectData);
-                    }
-                    event.target.value = '';
-                    return;
-                } catch (error) {
-                    console.error('Error parsing stored project data:', error);
-                }
-            }
-            
-            alert('Project data not found for this file. The data may have been cleared from browser storage.');
-            event.target.value = '';
-            return;
-        }
-        
+       
         // Handle SVG files (original method)
-        if (fileExtension === 'svg') {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const fileContent = event.target.result;
-                const projectData = parseProjectFromSVG(fileContent);
+
+                let projectData = null;
+                if (fileExtension === 'svg') {
+                    projectData = parseProjectFromSVG(fileContent);
+                }
+                else if (fileExtension === 'png') {
+                    projectData = parseProjectFromPNG(fileContent);
+                }
+                else if (fileExtension === 'pdf') {
+                    projectData = parseProjectFromPDF(fileContent);
+                }
                 
                 if (projectData) {
-                    if (confirm('This will replace your current project. Continue?')) {
-                        loadProjectData(projectData);
-                    }
+                    loadProjectData(projectData);
                 } else {
-                    alert('No project data found in this SVG file. Make sure it was exported with project data enabled.');
+                    alert('No project data found in this file. Make sure it was exported with project data enabled.');
                 }
                 
                 // Reset the file input so the same file can be selected again
                 event.target.value = '';
             };
-            reader.readAsText(file);
+            reader.readAsArrayBuffer(file);
             return;
         }
         
         // Unsupported file type
-        alert('Please select an SVG file, or a PNG/PDF file exported with project data from Mug Painter.');
+        alert('Please select an SVG / PNG / PDF file exported with project data from Mug Painter.');
         event.target.value = '';
     }
-}
 
 export function randomProjectName() {
     let name = getRandomName().replace(/[^a-zA-Z0-9-]/g, '-');

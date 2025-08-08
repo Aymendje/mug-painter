@@ -7,6 +7,15 @@ import { collectProjectData } from './project-manager.js';
 import { captureUndoState } from './undo-redo.js';
 
 // === MAIN TEMPLATE GENERATION ===
+export function getProjectMetadata() {
+    let projectMetadata = '';
+    if (dom.includeProjectDataCheckbox.checked) {
+        const projectData = collectProjectData();
+        projectMetadata = `<!--MUG_PAINTER_PROJECT_DATA:${btoa(JSON.stringify(projectData))}:END_PROJECT_DATA-->`;
+    }
+    return projectMetadata;
+}
+
 export async function generateTemplate() {
     // Capture current state for undo
     captureUndoState();
@@ -68,12 +77,7 @@ export async function generateTemplate() {
     }
     
     // 7. Assemble SVGs with optional project metadata
-    let projectMetadata = '';
-    if (dom.includeProjectDataCheckbox.checked) {
-        const projectData = collectProjectData();
-        projectMetadata = `<!--MUG_PAINTER_PROJECT_DATA:${btoa(JSON.stringify(projectData))}:END_PROJECT_DATA-->`;
-    }
-    
+    let projectMetadata = getProjectMetadata();
     const finalDefs = defs ? `<defs>${defs}</defs>` : '';
     
     // For preview: always show full checkerboard background as base layer for all modes
