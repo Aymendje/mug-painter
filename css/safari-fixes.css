@@ -1,0 +1,91 @@
+/* Safari-specific CSS fixes */
+
+/* Safari font rendering fixes */
+@supports (-webkit-appearance: none) {
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* Safari sticky positioning fixes */
+@supports (-webkit-overflow-scrolling: touch) {
+    .md\:sticky {
+        position: -webkit-sticky;
+        position: sticky;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+}
+
+/* Safari file input fixes */
+input[type="file"] {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Safari SVG rendering fixes */
+svg {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Safari canvas rendering fixes */
+canvas {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Safari button fixes */
+button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Safari input fixes */
+input, textarea, select {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Safari touch action fixes */
+@supports (-webkit-touch-callout: none) {
+    * {
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    button, input[type="button"], input[type="submit"] {
+        -webkit-touch-callout: default;
+    }
+}
+
+/* Safari zoom prevention */
+@media screen and (max-device-width: 480px) {
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Safari memory optimization for large elements */
+.large-canvas, .svg-preview {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Safari custom dropdown fixes */
+.custom-select {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Safari dark mode fixes */
+@media (prefers-color-scheme: dark) {
+    @supports (-webkit-appearance: none) {
+        input, textarea, select {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+    }
+}

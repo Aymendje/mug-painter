@@ -6,6 +6,8 @@ import { generateTemplate } from './template-generator.js';
 import { loadGoogleFonts, prefetchAllFonts } from './font-manager.js';
 import { setupEventListeners } from './event-handlers.js';
 import { CustomSelect } from './ui-components.js';
+import { initSafariFixes } from './safari-fixes.js';
+import { initMobileSupport } from './mobile-support.js';
 
 // === GLOBAL FUNCTION ACCESS ===
 // Make generateTemplate available globally for cross-module access
@@ -39,6 +41,10 @@ function initializeFontDropdowns() {
 // === APPLICATION INITIALIZATION ===
 function initializeApplication() {
     console.log('Initializing Mug Painter application...');
+    
+    // Initialize browser compatibility fixes first
+    initSafariFixes();
+    initMobileSupport();
     
     // Load Google Fonts into the page
     loadGoogleFonts();

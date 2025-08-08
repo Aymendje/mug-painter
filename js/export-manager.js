@@ -2,6 +2,8 @@
 
 import { state, dom } from './config.js';
 import { collectProjectData } from './project-manager.js';
+import { safariImageLoad, safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
+import { getMobileOptimizedCanvasSize, isMobileDevice, getMobileCompressionLimit, hideMobileLoadingIndicator } from './mobile-support.js';
 
 // === BASIC FILE DOWNLOAD TRIGGER ===
 export function triggerDownload(content, filename) {
@@ -20,8 +22,9 @@ export function triggerDownload(content, filename) {
 
 // === PNG EXPORT ===
 export async function renderAndDownloadPNG(svgString, filename) {
-    // Wait for all fonts to be ready before export
+    // Wait for all fonts to be ready before export (with Safari fixes)
     await document.fonts.ready;
+    await safariWaitForFonts();
     
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -46,11 +49,16 @@ export async function renderAndDownloadPNG(svgString, filename) {
     const svgWidth = widthMatch ? parseFloat(widthMatch[1]) : 800;
     const svgHeight = heightMatch ? parseFloat(heightMatch[1]) : 300;
     
-    // Convert to high-resolution canvas (300 DPI)
-    const dpi = 300;
+    // Convert to high-resolution canvas (mobile-optimized DPI)
+    const dpi = isMobileDevice() ? 150 : 300; // Lower DPI for mobile
     const scale = dpi / 25.4; // mm to inches
-    canvas.width = Math.round(svgWidth * scale);
-    canvas.height = Math.round(svgHeight * scale);
+    let canvasWidth = Math.round(svgWidth * scale);
+    let canvasHeight = Math.round(svgHeight * scale);
+    
+    // Apply mobile canvas size limits
+    const mobileOptimized = getMobileOptimizedCanvasSize(canvasWidth, canvasHeight);
+    canvas.width = mobileOptimized.width;
+    canvas.height = mobileOptimized.height;
     
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     
@@ -85,17 +93,20 @@ export async function renderAndDownloadPNG(svgString, filename) {
 
 // === PDF EXPORT ===
 export async function renderAndDownloadPDF(svgString, filename) {
-    // Wait for all fonts to be ready before export
+    // Wait for all fonts to be ready before export (with Safari fixes)
     await document.fonts.ready;
+    await safariWaitForFonts();
     
     // Letter size in horizontal orientation: 11" x 8.5" (279.4mm x 215.9mm)
     // Minimum margins: 6.3mm on all sides
     const { jsPDF } = window.jspdf;
+    const safariOptions = safariPdfFix();
     const pdf = new jsPDF({
         orientation: 'landscape', // horizontal orientation
         unit: 'mm',
         format: 'letter', // 8.5x11 inches
-        compress: true // Enable PDF compression
+        compress: safariOptions.compress !== false, // Safari-specific compression setting
+        ...safariOptions
     });
     
     // Letter size dimensions in landscape: width=279.4mm, height=215.9mm
@@ -414,15 +425,90 @@ export function removeImageBackground(imageType) {
     img.src = imageData;
 }
 
+// === IMAGE COMPRESSION ===
+async function compressImage(file, maxSizeBytes = getMobileCompressionLimit()) {
+    // If file is already under the limit, return as-is
+    if (file.size <= maxSizeBytes) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+            // Safari-specific image loading check
+            if (img.naturalWidth === 0 || img.naturalHeight === 0) {
+                console.warn('Safari image loading issue, retrying...');
+                setTimeout(() => img.onload(), 100);
+                return;
+            }
+            
+            // Calculate compression ratio based on file size
+            const compressionRatio = Math.min(1, Math.sqrt(maxSizeBytes / file.size));
+            
+            // Resize image dimensions (mobile-optimized)
+            const maxWidth = isMobileDevice() ? 1536 : 2048; // Smaller max for mobile
+            const maxHeight = isMobileDevice() ? 1536 : 2048;
+            
+            let { width, height } = img;
+            
+            // Scale down if image is too large
+            if (width > maxWidth || height > maxHeight) {
+                const aspectRatio = width / height;
+                if (width > height) {
+                    width = maxWidth;
+                    height = maxWidth / aspectRatio;
+                } else {
+                    height = maxHeight;
+                    width = maxHeight * aspectRatio;
+                }
+            }
+            
+            // Apply additional compression ratio if needed
+            width = Math.round(width * compressionRatio);
+            height = Math.round(height * compressionRatio);
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Draw and compress
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Start with high quality and reduce if needed
+            let quality = 0.85;
+            let compressedDataUrl;
+            
+            do {
+                compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                quality -= 0.05;
+            } while (compressedDataUrl.length > maxSizeBytes * 1.37 && quality > 0.3); // 1.37 accounts for base64 overhead
+            
+            console.log(`Image compressed: ${(file.size / 1024 / 1024).toFixed(1)}MB → ${(compressedDataUrl.length / 1024 / 1024 * 0.75).toFixed(1)}MB`);
+            resolve(compressedDataUrl);
+        };
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
 // === IMAGE UPLOAD HANDLER ===
-export function handleImageUpload(event, imageType) {
+export async function handleImageUpload(event, imageType) {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        
         // Check if uploaded file is SVG
         if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) {
             // For SVG files, read as text to preserve vector data
+            const reader = new FileReader();
             reader.onload = (e) => {
                 const svgContent = e.target.result;
                 // Store both the raw SVG content and a flag indicating it's vector
@@ -448,29 +534,67 @@ export function handleImageUpload(event, imageType) {
             };
             reader.readAsText(file);
         } else {
-            // For raster images (JPG, PNG, etc.), use data URL as before
-            reader.onload = (e) => {
+            // For raster images, compress if needed
+            const compressionLimit = getMobileCompressionLimit();
+            const isLargeFile = file.size > compressionLimit;
+            
+            if (isLargeFile) {
+                // Show compression notice
+                console.log(`Large file detected (${(file.size / 1024 / 1024).toFixed(1)}MB). Compressing...`);
+                
+                // Show mobile loading indicator for large files on mobile
+                if (isMobileDevice()) {
+                    window.showMobileLoadingIndicator?.('Processing large image...');
+                }
+            }
+            
+            try {
+                const imageDataUrl = await compressImage(file);
+                
+                // Hide mobile loading indicator
+                if (isMobileDevice()) {
+                    hideMobileLoadingIndicator();
+                }
+                
                 if (imageType === 'face') {
-                    state.uploadedFaceImage = e.target.result;
+                    state.uploadedFaceImage = imageDataUrl;
                     // Enable background removal button for raster images
                     if (dom.removeBackgroundFaceBtn) {
                         dom.removeBackgroundFaceBtn.disabled = false;
                     }
                 } else if (imageType === 'back') {
-                    state.uploadedBackImage = e.target.result;
+                    state.uploadedBackImage = imageDataUrl;
                     // Enable background removal button for raster images
                     if (dom.removeBackgroundBackBtn) {
                         dom.removeBackgroundBackBtn.disabled = false;
                     }
                 } else if (imageType === 'bg') {
-                    state.uploadedBgImageData = e.target.result;
+                    state.uploadedBgImageData = imageDataUrl;
                 }
                 
                 if (window.generateTemplate) {
                     window.generateTemplate();
                 }
-            };
-            reader.readAsDataURL(file);
+                
+                // Update background removal button states
+                if (window.updateBackgroundRemovalButtons) {
+                    window.updateBackgroundRemovalButtons();
+                }
+                
+            } catch (error) {
+                console.error('Error processing image:', error);
+                
+                // Hide mobile loading indicator on error
+                if (isMobileDevice()) {
+                    hideMobileLoadingIndicator();
+                }
+                
+                if (isMobileDevice()) {
+                    alert('Unable to process image on this device. Please try a smaller file.');
+                } else {
+                    alert('Error processing image. Please try a different file.');
+                }
+            }
         }
     }
 }
