@@ -52,7 +52,6 @@ export async function renderAndDownloadPDF(svgString, filename) {
     
     // Letter size in horizontal orientation: 11" x 8.5" (279.4mm x 215.9mm)
     // Minimum margins: 6.3mm on all sides
-    const { jsPDF } = window.jspdf;
     const safariOptions = safariPdfFix();
     const pdf = new jsPDF({
         orientation: 'landscape', // horizontal orientation
@@ -233,7 +232,6 @@ export async function generateAndDownloadCutout() {
 
 // === CUTOUT PDF CREATION ===
 async function createCutoutPDF(pngDataUrl, filename, svgWidth, svgHeight) {
-    const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
