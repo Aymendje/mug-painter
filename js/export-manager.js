@@ -116,130 +116,78 @@ export async function renderAndDownloadPDF(svgString, filename) {
     const svgHeight = parseFloat(svgHeightStr);
 
     // Try using addSvgAsImage for vector SVG embedding (smaller file size, better quality)
-    try {
-        // Calculate scale to fit within available space while maintaining aspect ratio
-        const scaleX = maxContentWidth / svgWidth;
-        const scaleY = maxContentHeight / svgHeight;
-        const scale = Math.min(scaleX, scaleY);
-        
-        const finalWidth = Math.min(svgWidth * scale, maxContentWidth);
-        const finalHeight = Math.min(svgHeight * scale, maxContentHeight);
-        
-        // Try using the internal addSvgAsImage method for vector embedding
-        if (pdf.addSvgAsImage) {
-            await pdf.addSvgAsImage(svgString, margin, margin, finalWidth, finalHeight, undefined, 'SLOW', 0);
-        } else {
-            // Fallback: use internal method directly
-            await pdf.internal.addSvgAsImage(svgString, margin, margin, finalWidth, finalHeight, undefined, 'SLOW', 0);
-        }
-        
-        // Add project data to PDF if requested
-        let finalFilename = filename;
-        if (dom.includeProjectDataCheckbox?.checked) {
-            try {
-                const projectData = collectProjectData();
-                const encodedData = btoa(JSON.stringify(projectData));
-                
-                // Add project data as PDF metadata
-                pdf.setProperties({
-                    title: `Mug Painter - ${projectData.projectName || 'Unnamed'}`,
-                    subject: 'Mug Wrap Template',
-                    creator: 'Mug Painter',
-                    keywords: 'mug, wrap, template, sublimation',
-                    'MugPainterProjectData': encodedData
-                });
-                
-                // Also store in localStorage as backup
-                const projectKey = `mugpainter_${filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-                localStorage.setItem(projectKey, encodedData);
-                
-                // Add marker to filename
-                finalFilename = filename.replace(/(\.[^.]+)$/, '_with_data$1');
-            } catch (error) {
-                console.warn('Could not embed project data in PDF:', error);
-            }
-        }
-        
-        // Save the PDF
-        pdf.save(finalFilename);
-        
-    } catch (error) {
-        console.error('Error using addSvgAsImage, falling back to raster method:', error);
-        
-        // Fallback to raster method if SVG embedding fails
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
 
-        await new Promise((resolve, reject) => {
-            img.onload = async () => { 
-                // Additional delay to ensure fonts are applied in SVG
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Calculate scale to fit within available space while maintaining aspect ratio
-                const scaleX = maxContentWidth / svgWidth;
-                const scaleY = maxContentHeight / svgHeight;
-                const scale = Math.min(scaleX, scaleY);
-                
-                const finalWidth = svgWidth * scale;
-                const finalHeight = svgHeight * scale;
-                
-                // Optimized resolution for PDF (150 DPI for good quality but smaller file size)
-                const dpi = 150;
-                const pdfScale = dpi / 25.4; // mm to pixels at 150 DPI
-                canvas.width = Math.round(svgWidth * pdfScale);
-                canvas.height = Math.round(svgHeight * pdfScale);
-                
-                // Draw SVG to canvas with white background
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Convert canvas to PNG for highest quality
-                const imageDataUrl = canvas.toDataURL('image/png');
-                
-                // Add image to PDF at top-left position (with margin)
-                pdf.addImage(imageDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
-                
-                // Add project data to PDF if requested (fallback method)
-                let finalFilename = filename;
-                if (dom.includeProjectDataCheckbox?.checked) {
-                    try {
-                        const projectData = collectProjectData();
-                        const encodedData = btoa(JSON.stringify(projectData));
-                        
-                        // Add project data as PDF metadata
-                        pdf.setProperties({
-                            title: `Mug Painter - ${projectData.projectName || 'Unnamed'}`,
-                            subject: 'Mug Wrap Template',
-                            creator: 'Mug Painter',
-                            keywords: 'mug, wrap, template, sublimation',
-                            'MugPainterProjectData': encodedData
-                        });
-                        
-                        // Also store in localStorage as backup
-                        const projectKey = `mugpainter_${filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_')}`;
-                        localStorage.setItem(projectKey, encodedData);
-                        
-                        // Add marker to filename
-                        finalFilename = filename.replace(/(\.[^.]+)$/, '_with_data$1');
-                    } catch (error) {
-                        console.warn('Could not embed project data in PDF fallback:', error);
-                    }
+    await new Promise((resolve, reject) => {
+        img.onload = async () => { 
+            // Additional delay to ensure fonts are applied in SVG
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Calculate scale to fit within available space while maintaining aspect ratio
+            const scaleX = maxContentWidth / svgWidth;
+            const scaleY = maxContentHeight / svgHeight;
+            const scale = Math.min(scaleX, scaleY);
+            
+            const finalWidth = svgWidth * scale;
+            const finalHeight = svgHeight * scale;
+            
+            // Optimized resolution for PDF (150 DPI for good quality but smaller file size)
+            const dpi = 150;
+            const pdfScale = dpi / 25.4; // mm to pixels at 150 DPI
+            canvas.width = Math.round(svgWidth * pdfScale);
+            canvas.height = Math.round(svgHeight * pdfScale);
+            
+            // Draw SVG to canvas with white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to PNG for highest quality
+            const imageDataUrl = canvas.toDataURL('image/png');
+            
+            // Add image to PDF at top-left position (with margin)
+            pdf.addImage(imageDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
+            
+            // Add project data to PDF if requested (fallback method)
+            let finalFilename = filename;
+            if (dom.includeProjectDataCheckbox?.checked) {
+                try {
+                    const projectData = collectProjectData();
+                    const encodedData = btoa(JSON.stringify(projectData));
+                    
+                    // Add project data as PDF metadata
+                    pdf.setProperties({
+                        title: `Mug Painter - ${projectData.projectName || 'Unnamed'}`,
+                        subject: 'Mug Wrap Template',
+                        creator: 'Mug Painter',
+                        keywords: 'mug, wrap, template, sublimation',
+                        'MugPainterProjectData': encodedData
+                    });
+                    
+                    // Also store in localStorage as backup
+                    const projectKey = `mugpainter_${filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    localStorage.setItem(projectKey, encodedData);
+                    
+                    // Add marker to filename
+                    finalFilename = filename.replace(/(\.[^.]+)$/, '_with_data$1');
+                } catch (error) {
+                    console.warn('Could not embed project data in PDF fallback:', error);
                 }
-                
-                // Save the PDF
-                pdf.save(finalFilename);
-                
-                URL.revokeObjectURL(url); 
-                resolve(); 
-            };
-            img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
-            img.src = url;
-        });
-    }
+            }
+            
+            // Save the PDF
+            pdf.save(finalFilename);
+            
+            URL.revokeObjectURL(url); 
+            resolve(); 
+        };
+        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
+        img.src = url;
+    });
 }
 
 // === EXTERIOR-ONLY SVG CREATION ===
