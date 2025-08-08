@@ -1,26 +1,11 @@
 // export-manager.js - Export functionality for SVG, PNG, PDF, and cutout files
 
 import { state, dom } from './config.js';
-import { collectProjectData } from './project-manager.js';
-import { safariImageLoad, safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
+import { safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
 import { getProjectMetadata } from './template-generator.js';
 import { canvasToPngWithMetadata } from './png-manager.js';
-import { compressImage } from './image-operations.js';
+import { compressImage, svgToPng } from './image-operations.js';
 
-// === Lightweight mobile helpers (no external dependency) ===
-function isMobileDevice() {
-    return ('ontouchstart' in window || navigator.maxTouchPoints > 0) || window.innerWidth <= 768;
-}
-
-function getOptimizedCanvasSize(width, height) {
-    const maxSide = isMobileDevice() ? 2048 : 4096;
-    const currentMax = Math.max(width, height);
-    if (currentMax <= maxSide) {
-        return { width, height };
-    }
-    const scale = maxSide / currentMax;
-    return { width: Math.round(width * scale), height: Math.round(height * scale) };
-}
 
 // === BASIC FILE DOWNLOAD TRIGGER ===
 export function triggerDownload(content, filename) {
@@ -39,62 +24,20 @@ export function triggerDownload(content, filename) {
 
 // === PNG EXPORT ===
 export async function renderAndDownloadPNG(svgString, filename) {
-    // Wait for all fonts to be ready before export (with Safari fixes)
-    await document.fonts.ready;
-    await safariWaitForFonts();
-    
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-
-    await new Promise((resolve, reject) => {
-        img.onload = async () => { 
-            // Additional delay to ensure fonts are applied in SVG
-            await new Promise(resolve => setTimeout(resolve, 100));
-            URL.revokeObjectURL(url); 
-            resolve(); 
-        };
-        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
-        img.src = url;
-    });
-
-    // Get SVG dimensions
-    const widthMatch = svgString.match(/width="(\d+(\.\d+)?)/);
-    const heightMatch = svgString.match(/height="(\d+(\.\d+)?)/);
-    const svgWidth = widthMatch ? parseFloat(widthMatch[1]) : 800;
-    const svgHeight = heightMatch ? parseFloat(heightMatch[1]) : 300;
-    
-    // Convert to high-resolution canvas 
-    const dpi = 300;
-    const scale = dpi / 25.4; // mm to inches
-    let canvasWidth = Math.round(svgWidth * scale);
-    let canvasHeight = Math.round(svgHeight * scale);
-    
-    // Apply canvas size limits
-    const canvasSize = getOptimizedCanvasSize(canvasWidth, canvasHeight);
-    canvas.width = canvasSize.width;
-    canvas.height = canvasSize.height;
-    
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    
-    // Add project data if requested
-    let finalFilename = filename;
+    const pngBlob = await svgToPng(svgString);
     const projectMetadata = getProjectMetadata();
 
     // TODO embed projectMetadata in PNG
     const outBlob = await canvasToPngWithMetadata(
-        canvas,
+        pngBlob,
         "projectMetadata",
         projectMetadata // make sure this is a string; stringify if it's an object
       );
 
-    // Download PNG
     const pngUrl = URL.createObjectURL(outBlob);
     const a = document.createElement('a');
     a.href = pngUrl;
-    a.download = finalFilename;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -135,68 +78,41 @@ export async function renderAndDownloadPDF(svgString, filename) {
     const svgWidth = parseFloat(svgWidthStr);
     const svgHeight = parseFloat(svgHeightStr);
 
-    // Try using addSvgAsImage for vector SVG embedding (smaller file size, better quality)
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-
-    await new Promise((resolve, reject) => {
-        img.onload = async () => { 
-            // Additional delay to ensure fonts are applied in SVG
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Calculate scale to fit within available space while maintaining aspect ratio
-            const scaleX = maxContentWidth / svgWidth;
-            const scaleY = maxContentHeight / svgHeight;
-            const scale = Math.min(scaleX, scaleY);
-            
-            const finalWidth = svgWidth * scale;
-            const finalHeight = svgHeight * scale;
-            
-            // Optimized resolution for PDF (150 DPI for good quality but smaller file size)
-            const dpi = 150;
-            const pdfScale = dpi / 25.4; // mm to pixels at 150 DPI
-            canvas.width = Math.round(svgWidth * pdfScale);
-            canvas.height = Math.round(svgHeight * pdfScale);
-            
-            // Draw SVG to canvas with white background
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            // Convert canvas to PNG for highest quality
-            const imageDataUrl = canvas.toDataURL('image/png');
-            
-            // Add image to PDF at top-left position (with margin)
-            pdf.addImage(imageDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
-            
-            // Add project data to PDF if requested (fallback method)
-            let finalFilename = filename;
-            if (dom.includeProjectDataCheckbox?.checked) {
-                try {
-                    // Add project data as PDF metadata
-                    pdf.setProperties({
-                        title: `Mug Painter - ${dom.projectNameInput.value || 'Unnamed'}`,
-                        subject: 'Mug Wrap Template',
-                        creator: 'Mug Painter',
-                        keywords: getProjectMetadata()
-                    });
-                    } catch (error) {
-                    console.warn('Could not embed project data in PDF fallback:', error);
-                }
-            }
-            
-            // Save the PDF
-            pdf.save(finalFilename);
-            
-            URL.revokeObjectURL(url); 
-            resolve(); 
-        };
-        img.onerror = (err) => { URL.revokeObjectURL(url); reject(err); };
-        img.src = url;
+    // Rasterize SVG to PNG using shared helper
+    const pngBlob = await svgToPng(svgString);
+    const imageDataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(pngBlob);
     });
+
+    // Calculate scale to fit within available space while maintaining aspect ratio
+    const scaleX = maxContentWidth / svgWidth;
+    const scaleY = maxContentHeight / svgHeight;
+    const scale = Math.min(scaleX, scaleY);
+    const finalWidth = svgWidth * scale;
+    const finalHeight = svgHeight * scale;
+
+    // Add image to PDF at top-left position (with margin)
+    pdf.addImage(imageDataUrl, 'PNG', margin, margin, finalWidth, finalHeight);
+
+    // Add project data to PDF if requested (fallback method)
+    let finalFilename = filename;
+    if (dom.includeProjectDataCheckbox?.checked) {
+        try {
+            pdf.setProperties({
+                title: `Mug Painter - ${dom.projectNameInput.value || 'Unnamed'}`,
+                subject: 'Mug Wrap Template',
+                creator: 'Mug Painter',
+                keywords: getProjectMetadata()
+            });
+        } catch (error) {
+            console.warn('Could not embed project data in PDF fallback:', error);
+        }
+    }
+
+    // Save the PDF
+    pdf.save(finalFilename);
 }
 
 // === EXTERIOR-ONLY SVG CREATION ===

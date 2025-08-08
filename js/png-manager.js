@@ -40,19 +40,7 @@ function __insertChunkBeforeIEND(pngBytes, chunkBytes){
   throw new Error("IEND not found");
 }
 
-export async function canvasToPngWithMetadata(canvas, key, value){
-  const blob = await new Promise(res => {
-    if (canvas.toBlob) canvas.toBlob(res, "image/png");
-    else {
-      // fallback via dataURL
-      const dataURL = canvas.toDataURL("image/png");
-      const [,b64] = dataURL.split(',');
-      const bin = atob(b64);
-      const u8 = new Uint8Array(bin.length);
-      for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
-      res(new Blob([u8], {type:"image/png"}));
-    }
-  });
+export async function canvasToPngWithMetadata(blob, key, value){
   const ab = await blob.arrayBuffer();
   const chunk = __makeITXtChunk(key, value ?? "");
   const withMeta = __insertChunkBeforeIEND(new Uint8Array(ab), chunk);

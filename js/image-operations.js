@@ -145,3 +145,113 @@ export function removeImageBackground(imageType) {
     
     img.src = imageData;
 }
+
+export function svgToPng(svgString) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!svgString || typeof svgString !== 'string') {
+                reject(new Error('svgToPng: svgString must be a non-empty string'));
+                return;
+            }
+
+            // Ensure fonts are ready before rasterizing SVG
+            try {
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+            } catch (_) {
+                // Ignore font readiness errors; continue best-effort
+            }
+
+            const img = new Image();
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            img.onload = async () => {
+                try {
+                    // Small delay to help ensure font application inside SVG (Safari/Firefox quirks)
+                    await new Promise(r => setTimeout(r, 100));
+
+                    // Determine SVG dimensions
+                    const widthMatch = svgString.match(/width="([^\"]+)"/);
+                    const heightMatch = svgString.match(/height="([^\"]+)"/);
+                    const viewBoxMatch = svgString.match(/viewBox="([^"]+)"/);
+
+                    let widthStr = widthMatch ? widthMatch[1] : '';
+                    let heightStr = heightMatch ? heightMatch[1] : '';
+
+                    let canvasWidth;
+                    let canvasHeight;
+
+                    const parseDimension = (dimStr) => {
+                        if (!dimStr) return null;
+                        const isMm = /mm\b/i.test(dimStr);
+                        const numeric = parseFloat(dimStr.replace(/[^0-9.\-]/g, ''));
+                        if (Number.isNaN(numeric)) return null;
+                        return { value: numeric, unit: isMm ? 'mm' : 'px' };
+                    };
+
+                    const parsedW = parseDimension(widthStr);
+                    const parsedH = parseDimension(heightStr);
+
+                    if (parsedW && parsedH) {
+                        if (parsedW.unit === 'mm' || parsedH.unit === 'mm') {
+                            // Treat as millimeters at 300 DPI
+                            const dpi = 300;
+                            const scale = dpi / 25.4; // mm -> px
+                            canvasWidth = Math.max(1, Math.round(parsedW.value * scale));
+                            canvasHeight = Math.max(1, Math.round(parsedH.value * scale));
+                        } else {
+                            // Pixels
+                            canvasWidth = Math.max(1, Math.round(parsedW.value));
+                            canvasHeight = Math.max(1, Math.round(parsedH.value));
+                        }
+                    } else if (viewBoxMatch) {
+                        const vb = viewBoxMatch[1].trim().split(/\s+/).map(Number);
+                        const vbWidth = vb[2] || img.naturalWidth || 800;
+                        const vbHeight = vb[3] || img.naturalHeight || 300;
+                        canvasWidth = Math.max(1, Math.round(vbWidth));
+                        canvasHeight = Math.max(1, Math.round(vbHeight));
+                    } else {
+                        // Fallback to image intrinsic or sensible defaults
+                        canvasWidth = img.naturalWidth || 800;
+                        canvasHeight = img.naturalHeight || 300;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+
+                    // Optional: white background to avoid transparent background if SVG lacks one
+                    // Comment out if transparency is desired by default
+                    // ctx.fillStyle = '#ffffff';
+                    // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    canvas.toBlob((blob) => {
+                        URL.revokeObjectURL(url);
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(new Error('svgToPng: Failed to create PNG blob'));
+                        }
+                    }, 'image/png');
+                } catch (err) {
+                    URL.revokeObjectURL(url);
+                    reject(err);
+                }
+            };
+
+            img.onerror = (err) => {
+                URL.revokeObjectURL(url);
+                reject(err);
+            };
+
+            img.src = url;
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
