@@ -282,23 +282,59 @@ export function handleProjectFileLoad() {
 export function processProjectFile(event) {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const fileContent = event.target.result;
-            const projectData = parseProjectFromSVG(fileContent);
+        const filename = file.name;
+        const fileExtension = filename.split('.').pop().toLowerCase();
+        
+        // Check if this is a file with embedded project data (PNG/PDF with '_with_data' suffix)
+        if ((fileExtension === 'png' || fileExtension === 'pdf') && filename.includes('_with_data')) {
+            // Try to load project data from localStorage based on filename
+            const baseName = filename.replace(/_with_data\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_');
+            const projectKey = `mugpainter_${baseName}`;
+            const storedData = localStorage.getItem(projectKey);
             
-            if (projectData) {
-                if (confirm('This will replace your current project. Continue?')) {
-                    loadProjectData(projectData);
+            if (storedData) {
+                try {
+                    const projectData = JSON.parse(atob(storedData));
+                    if (confirm('This file contains project data. Load it for editing?')) {
+                        loadProjectData(projectData);
+                    }
+                    event.target.value = '';
+                    return;
+                } catch (error) {
+                    console.error('Error parsing stored project data:', error);
                 }
-            } else {
-                alert('No project data found in this file. Make sure the file was exported with project data enabled.');
             }
             
-            // Reset the file input so the same file can be selected again
+            alert('Project data not found for this file. The data may have been cleared from browser storage.');
             event.target.value = '';
-        };
-        reader.readAsText(file);
+            return;
+        }
+        
+        // Handle SVG files (original method)
+        if (fileExtension === 'svg') {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const fileContent = event.target.result;
+                const projectData = parseProjectFromSVG(fileContent);
+                
+                if (projectData) {
+                    if (confirm('This will replace your current project. Continue?')) {
+                        loadProjectData(projectData);
+                    }
+                } else {
+                    alert('No project data found in this SVG file. Make sure it was exported with project data enabled.');
+                }
+                
+                // Reset the file input so the same file can be selected again
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+            return;
+        }
+        
+        // Unsupported file type
+        alert('Please select an SVG file, or a PNG/PDF file exported with project data from Mug Painter.');
+        event.target.value = '';
     }
 }
 
