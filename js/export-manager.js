@@ -5,6 +5,7 @@ import { safariWaitForFonts, safariPdfFix } from './safari-fixes.js';
 import { getProjectMetadata } from './template-generator.js';
 import { canvasToPngWithMetadata } from './png-manager.js';
 import { compressImage, svgToPng } from './image-operations.js';
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.1';
 
 
 // === BASIC FILE DOWNLOAD TRIGGER ===
