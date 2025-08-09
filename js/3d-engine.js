@@ -532,6 +532,32 @@ export async function createMugTexture(svgForDesign) {
     if (!svgForDesign) {
         return null;
     }
+
+    // --- FONT LOADING ---
+    // Identify which fonts are currently in use for text elements
+    const fontsInUse = new Set();
+    if (document.querySelector('input[name="faceArtType"]:checked')?.value === 'text' && state.selectedFaceFont) {
+        fontsInUse.add(state.selectedFaceFont);
+    }
+    if (document.querySelector('input[name="backArtType"]:checked')?.value === 'text' && state.selectedBackFont) {
+        fontsInUse.add(state.selectedBackFont);
+    }
+
+    // If there are fonts to load, explicitly load them and wait
+    if (fontsInUse.size > 0) {
+        try {
+            const fontLoadPromises = Array.from(fontsInUse).map(font => {
+                // Use a standard weight and style for checking; the browser will handle variants
+                return document.fonts.load(`12px "${font}"`);
+            });
+            await Promise.all(fontLoadPromises);
+            // Small delay to allow browser to render the font after loading
+            await new Promise(resolve => setTimeout(resolve, 50));
+        } catch (error) {
+            console.warn("Could not preload fonts for 3D texture, continuing anyway...", error);
+        }
+    }
+    // --- END FONT LOADING ---
     
     // Create a clean version of SVG without main template path stroke for 3D texture
     // Only remove stroke from the main path element (template outline), keep text and other elements intact
@@ -559,15 +585,9 @@ export async function createMugTexture(svgForDesign) {
     const svgBlob = new Blob([svg3D], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     
-    return new Promise(async (resolve) => {
-        img.onload = async () => {
+    return new Promise((resolve) => {
+        img.onload = () => {
             try {
-                // Wait for fonts to be ready in the document
-                await document.fonts.ready;
-                
-                // Additional small delay to ensure SVG fonts are applied
-                await new Promise(resolve => setTimeout(resolve, 50));
-                
                 // Step 1: Render SVG to first canvas (PNG conversion)
                 svgCtx.fillStyle = '#ffffff';
                 svgCtx.fillRect(0, 0, width, height);
