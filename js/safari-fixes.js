@@ -17,8 +17,32 @@ export function initSafariFixes() {
     fixFileInputs();
     fixScrolling();
     fixTouchEvents();
+    fixRadioLabels();
     
     console.log('Safari compatibility fixes applied');
+}
+
+// === RADIO LABEL CLICK FIX ===
+function fixRadioLabels() {
+    // iOS Safari sometimes fails to trigger a 'change' event when a label is clicked.
+    if (!isIOS) return;
+
+    const labels = document.querySelectorAll('label');
+    labels.forEach(label => {
+        const input = label.querySelector('input[type="radio"], input[type="checkbox"]');
+        if (input) {
+            label.addEventListener('click', (e) => {
+                // Prevent default to avoid double-firing on some devices.
+                e.preventDefault();
+
+                // Manually trigger the 'click' on the input to ensure the 'change' event fires.
+                if (input.checked !== true) {
+                    input.checked = true;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
+    });
 }
 
 // === FONT LOADING FIXES ===
