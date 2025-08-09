@@ -25,7 +25,7 @@ export const GOOGLE_FONTS = [
     "Permanent Marker",
     "Rock Salt",
     "Creepster",
-    "Nosifier"
+    "Nosifer"
 ];
 
 // === GLOBAL STATE ===

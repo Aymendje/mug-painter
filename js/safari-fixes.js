@@ -2,7 +2,7 @@
 
 // === BROWSER DETECTION ===
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isIOS = /iPad|iPhone|iPod|Safari/.test(navigator.userAgent) && !window.MSStream;
 
 // === SAFARI FIXES INITIALIZATION ===
 export function initSafariFixes() {
@@ -49,14 +49,9 @@ function fixRadioLabels() {
 function fixFontLoading() {
     // Safari has issues with document.fonts.ready timing
     if (document.fonts && document.fonts.ready) {
-        // Add additional delay for Safari font loading
-        const originalReady = document.fonts.ready;
-        document.fonts.ready = originalReady.then(() => {
-            return new Promise(resolve => {
-                // Extra delay for Safari to ensure fonts are truly loaded
-                setTimeout(resolve, isSafari ? 300 : 100);
-            });
-        });
+        // Do not reassign document.fonts.ready as it is readonly in Safari.
+        // Extra readiness checks/delays are handled by safariWaitForFonts() where needed.
+        void document.fonts.ready.catch(() => {});
     }
     
     // Ensure Google Fonts are properly loaded in Safari
