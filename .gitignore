@@ -1,0 +1,55 @@
+# Node dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Build artifacts
+dist/
+build/
+.cache/
+.turbo/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+
+# Lint/style caches
+.eslintcache
+.stylelintcache
+
+# Tool caches
+.parcel-cache/
+.sass-cache/
+.happypack/
+
+# Deployment/platform
+.vercel/
+node_modules
+/.next/cache
+/.next/server
+/.next
+
