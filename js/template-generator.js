@@ -244,14 +244,14 @@ function createTextArtElement(type, x, y, w, h) {
     textNode.setAttribute('font-size', '100'); // Large size for accurate measurement
     textNode.setAttribute('font-weight', fontWeight);
     textNode.setAttribute('font-style', fontStyle);
-    textNode.setAttribute('dominant-baseline', 'middle');
+    // Avoid Safari baseline quirks; we'll center using bbox math
     textNode.setAttribute('text-anchor', 'middle');
     
     lines.forEach((line, i) => {
         const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
         tspan.textContent = line;
         tspan.setAttribute('x', '0');
-        tspan.setAttribute('dy', i === 0 ? `-${(lines.length-1)*0.6}em` : '1.2em');
+        tspan.setAttribute('dy', i === 0 ? '0' : '1.2em');
         textNode.appendChild(tspan);
     });
     
@@ -263,9 +263,11 @@ function createTextArtElement(type, x, y, w, h) {
     const scale = Math.min(w / bbox.width, h / bbox.height);
     const finalFontSize = 100 * scale;
     const flipTransform = isTextFlipped ? 'scale(-1, 1)' : '';
-    const transform = `translate(${x + w / 2}, ${y + h / 2}) ${flipTransform}`;
-    const textContent = lines.map(l => `<tspan x="0" dy="${lines.indexOf(l) === 0 ? -((lines.length-1)*0.6) : 1.2}em">${l}</tspan>`).join('');
-    const textAttributes = `x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" dominant-baseline="middle" text-anchor="middle" transform="${transform}"`;
+    const groupTransform = `translate(${x + w / 2}, ${y + h / 2})`;
+    const yAdjust = - (bbox.y + bbox.height / 2) * scale;
+    const textTransform = `${flipTransform} translate(0, ${yAdjust.toFixed(2)})`;
+    const textContent = lines.map((line, i) => `<tspan x="0" dy="${i === 0 ? 0 : 1.2}em">${line}</tspan>`).join('');
+    const textAttributes = `x="0" y="0" font-family="${font}" font-size="${finalFontSize.toFixed(2)}" font-weight="${fontWeight}" font-style="${fontStyle}" text-decoration="${textDecorationValue}" text-anchor="middle" transform="${groupTransform} ${textTransform}"`;
     
     if (isContour) {
         // Create outlined text using two text elements: stroke underneath, fill on top
