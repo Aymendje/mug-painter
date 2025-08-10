@@ -62,6 +62,10 @@ export function init3DScene() {
     });
     state.renderer.setSize(canvasWidth, canvasHeight);
     state.renderer.setPixelRatio(window.devicePixelRatio || 1);
+    // Use sRGB encoding for correct color reproduction
+    if (THREE && THREE.sRGBEncoding) {
+        state.renderer.outputEncoding = THREE.sRGBEncoding;
+    }
     // Enable shadows for realistic look
     state.renderer.shadowMap.enabled = true;
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -542,17 +546,9 @@ export async function createMugTexture(svgForDesign) {
         'stroke="none"'
     );
     
-    // Create canvas for SVG->PNG conversion
+    // Create canvas for SVG->PNG conversion (we'll size it when the image loads)
     const svgCanvas = document.createElement('canvas');
     const svgCtx = svgCanvas.getContext('2d');
-    
-    // Get dimensions from svg-preview instead of hardcoding
-    const previewRect = dom.svgPreview.getBoundingClientRect();
-    const width = previewRect.width > 0 ? previewRect.width : 1024;
-    const height = previewRect.height > 0 ? previewRect.height : 512;
-    
-    svgCanvas.width = width;
-    svgCanvas.height = height;
     
     // Create image from SVG
     const img = new Image();
@@ -570,15 +566,58 @@ export async function createMugTexture(svgForDesign) {
                 // Additional small delay to ensure SVG fonts are applied
                 await new Promise(resolve => setTimeout(resolve, 50));
                 
-                // Step 1: Render SVG to first canvas (PNG conversion)
+                // Determine an appropriate texture resolution
+                const dpr = window.devicePixelRatio || 1;
+                const maxTextureSize = (state.renderer && state.renderer.capabilities && state.renderer.capabilities.maxTextureSize) ? state.renderer.capabilities.maxTextureSize : 4096;
+                const previewRect = dom.svgPreview.getBoundingClientRect();
+                const desiredWidth = Math.max(1, Math.round(previewRect.width * dpr * 2));
+                const desiredHeight = Math.max(1, Math.round(previewRect.height * dpr * 2));
+
+                const srcWidth = img.naturalWidth || desiredWidth;
+                const srcHeight = img.naturalHeight || desiredHeight;
+
+                // Clamp to GPU limits and the source resolution while keeping aspect ratio
+                let targetWidth = Math.min(srcWidth, desiredWidth, maxTextureSize);
+                let targetHeight = Math.round(srcHeight * (targetWidth / srcWidth));
+                if (targetHeight > maxTextureSize) {
+                    const scale = maxTextureSize / targetHeight;
+                    targetHeight = Math.min(maxTextureSize, targetHeight);
+                    targetWidth = Math.round(targetWidth * scale);
+                }
+
+                svgCanvas.width = targetWidth;
+                svgCanvas.height = targetHeight;
+
+                // High-quality downscale
+                if ('imageSmoothingEnabled' in svgCtx) {
+                    svgCtx.imageSmoothingEnabled = true;
+                }
+                if ('imageSmoothingQuality' in svgCtx) {
+                    svgCtx.imageSmoothingQuality = 'high';
+                }
+
                 svgCtx.fillStyle = '#ffffff';
-                svgCtx.fillRect(0, 0, width, height);
-                svgCtx.drawImage(img, 0, 0, width, height);
-                
-                // Create Three.js texture directly from the rendered SVG canvas (no flip)
+                svgCtx.fillRect(0, 0, targetWidth, targetHeight);
+                svgCtx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+                // Create Three.js texture directly from the rendered SVG canvas
                 const texture = new THREE.CanvasTexture(svgCanvas);
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
+                texture.wrapS = THREE.ClampToEdgeWrapping;
+                texture.wrapT = THREE.ClampToEdgeWrapping;
+                // Prefer linear filtering for smooth visuals, and enable anisotropy for better angle sampling
+                texture.minFilter = THREE.LinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                if (state.renderer && state.renderer.capabilities) {
+                    const getMaxAniso = state.renderer.capabilities.getMaxAnisotropy;
+                    const maxAniso = typeof getMaxAniso === 'function' ? getMaxAniso.call(state.renderer.capabilities) : (state.renderer.capabilities.maxAnisotropy || 1);
+                    if (typeof maxAniso === 'number' && maxAniso > 1) {
+                        texture.anisotropy = maxAniso;
+                    }
+                }
+                if (THREE && THREE.sRGBEncoding) {
+                    texture.encoding = THREE.sRGBEncoding;
+                }
+                texture.needsUpdate = true;
                 
                 URL.revokeObjectURL(url);
                 resolve(texture);
