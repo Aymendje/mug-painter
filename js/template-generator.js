@@ -66,9 +66,12 @@ export async function generateTemplate() {
     defs += `<pattern id="checkerboard" patternUnits="userSpaceOnUse" width="20" height="20"><rect width="10" height="10" x="0" y="0" fill="#e2e8f0" /><rect width="10" height="10" x="10" y="0" fill="#f1f5f9" /><rect width="10" height="10" x="0" y="10" fill="#f1f5f9" /><rect width="10" height="10" x="10" y="10" fill="#e2e8f0" /></pattern>`;
 
     if (selectedBgType === 'image' && state.uploadedBgImageData) {
-        backgroundElement = await createImageBackground(backgroundPath, bgAreaWidth, bgAreaX, mainHeight);
-        defs += backgroundElement.defs;
-        backgroundElement = backgroundElement.element;
+        if (state.isBgColorApplied) {
+            backgroundElement = `<path d="${backgroundPath}" fill="${dom.bgColorPicker.value}"/>`;
+        }
+        const imageBackground = await createImageBackground(backgroundPath, bgAreaWidth, bgAreaX, mainHeight);
+        defs += imageBackground.defs;
+        backgroundElement += imageBackground.element;
     } else if (selectedBgType === 'color') {
         backgroundElement = `<path d="${backgroundPath}" fill="${dom.bgColorPicker.value}"/>`;
     } else { // Transparent

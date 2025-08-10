@@ -282,6 +282,12 @@ export function setupEventListeners() {
         dom.rotateBgRBtn.addEventListener('click', () => { state.bgRotation = (state.bgRotation + 90) % 360; generateTemplate(); });
     }
 
+    dom.applyBgColorBtn.addEventListener('click', () => {
+        state.isBgColorApplied = !state.isBgColorApplied;
+        toggleButtonState(dom.applyBgColorBtn, state.isBgColorApplied);
+        generateTemplate();
+    });
+
     // === DOWNLOAD AND EXPORT LISTENERS ===
     dom.downloadDesignBtn.addEventListener('click', () => {
         const format = dom.exportFormatSelect.value;

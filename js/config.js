@@ -50,6 +50,7 @@ export const state = {
     isBgFlippedH: false,
     isBgFlippedV: false,
     bgRotation: 0,
+    isBgColorApplied: false,
     
     // Text formatting states - Face
     isFaceBold: false,
@@ -181,6 +182,7 @@ export const dom = {
     flipBgVBtn: document.getElementById('flipBgVBtn'),
     rotateBgLBtn: document.getElementById('rotateBgLBtn'),
     rotateBgRBtn: document.getElementById('rotateBgRBtn'),
+    applyBgColorBtn: document.getElementById('applyBgColorBtn'),
     
     // Export controls
     exportFormatSelect: document.getElementById('exportFormat'),

@@ -98,11 +98,14 @@
                             <input type="color" id="bgColorPicker" value="#BFDBFE" class="h-12 w-64 border-gray-300 rounded-md p-1 cursor-pointer">
                         </div>
                         <div id="bg-image-controls" class="hidden flex flex-col gap-2">
-                             <!-- Row 1: Upload + Style + Magic Eraser -->
+                             <!-- Row 1: Upload -->
                              <div class="flex items-center gap-2">
                                  <input type="file" id="bgImageUpload" class="hidden" accept="image/*,.svg">
-                                 <button id="bgUploadBtn" class="btn btn-secondary h-12">Upload Background</button>
-                                 <select id="bgImageStyle" class="select-field h-12" selected="fill">
+                                 <button id="bgUploadBtn" class="btn btn-secondary h-12 w-full">Upload Background</button>
+                             </div>
+                             <!-- Row 2: Style + Magic Eraser + Bg Color -->
+                             <div class="flex items-center gap-2">
+                                 <select id="bgImageStyle" class="select-field h-12 flex-grow" selected="fill">
                                      <option value="fill">Fill</option>
                                      <option value="fit">Fit</option>
                                      <option value="stretch">Stretch</option>
@@ -110,6 +113,7 @@
                                      <option value="center">Center</option>
                                  </select>
                                  <button id="removeBackgroundBgBtn" class="btn btn-secondary btn-icon" title="Magic Eraser" disabled>🪄</button>
+                                 <button id="applyBgColorBtn" class="btn btn-secondary btn-icon" title="Apply background color">🎨</button>
                              </div>
                              <!-- Row 2: Flip/Rotate + Size -->
                              <div class="flex items-center gap-2">
