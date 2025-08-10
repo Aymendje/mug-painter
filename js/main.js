@@ -116,6 +116,15 @@ function updateBackgroundRemovalButtons() {
             dom.removeBackgroundBackBtn.disabled = true;
         }
     }
+
+    // Enable background magic eraser if BG image exists and is not SVG
+    if (state.uploadedBgImageData && dom.removeBackgroundBgBtn) {
+        const isRasterBg = state.uploadedBgImageData.startsWith('data:image/') &&
+                           !state.uploadedBgImageData.startsWith('data:image/svg+xml');
+        dom.removeBackgroundBgBtn.disabled = !isRasterBg;
+    } else if (dom.removeBackgroundBgBtn) {
+        dom.removeBackgroundBgBtn.disabled = true;
+    }
 }
 
 // === START APPLICATION WHEN DOM IS READY ===

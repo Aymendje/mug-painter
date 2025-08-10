@@ -121,8 +121,14 @@ async function createImageBackground(backgroundPath, bgAreaWidth, bgAreaX, mainH
         case 'xl': h = mainHeight * 2; w = image.width * (h / image.height); break;
     }
 
+    // Build transform for background image based on flip/rotate
+    const scaleX = state.isBgFlippedH ? -1 : 1;
+    const scaleY = state.isBgFlippedV ? -1 : 1;
+    const rotation = state.bgRotation || 0;
+    const transformAttrTile = `transform="translate(${w/2}, ${h/2}) rotate(${rotation}) scale(${scaleX}, ${scaleY}) translate(${-w/2}, ${-h/2})"`;
+
     if (style === 'tile') {
-        const pattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${w}" height="${h}"><image href="${state.uploadedBgImageData}" x="0" y="0" width="${w}" height="${h}"/></pattern>`;
+        const pattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${w}" height="${h}"><image href="${state.uploadedBgImageData}" x="0" y="0" width="${w}" height="${h}" ${transformAttrTile}/></pattern>`;
         defs += pattern;
         return {
             defs: defs,
@@ -147,7 +153,12 @@ async function createImageBackground(backgroundPath, bgAreaWidth, bgAreaX, mainH
             imgWidth = bgAreaWidth;
             imgHeight = mainHeight;
         }
-        imageTag = `<image href="${state.uploadedBgImageData}" x="${x}" y="${y}" width="${imgWidth}" height="${imgHeight}" preserveAspectRatio="${preserveAspectRatio}"/>`;
+        // Transform about the center of the background area region
+        const centerX = bgAreaX + bgAreaWidth / 2;
+        const centerY = mainHeight / 2;
+        const transformAttrArea = `transform="translate(${centerX}, ${centerY}) rotate(${rotation}) scale(${scaleX}, ${scaleY}) translate(${-centerX}, ${-centerY})"`;
+
+        imageTag = `<image href="${state.uploadedBgImageData}" x="${x}" y="${y}" width="${imgWidth}" height="${imgHeight}" preserveAspectRatio="${preserveAspectRatio}" ${transformAttrArea}/>`;
         const bgPattern = `<pattern id="bgPattern" patternUnits="userSpaceOnUse" width="${bgAreaWidth.toFixed(2)}" height="${mainHeight.toFixed(2)}">${imageTag}</pattern>`;
         defs += bgPattern;
         return {

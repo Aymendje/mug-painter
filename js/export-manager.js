@@ -296,10 +296,16 @@ export async function handleImageUpload(event, imageType) {
                     // SVG background removal not supported, keep button disabled
                 } else if (imageType === 'bg') {
                     state.uploadedBgImageData = vectorData.dataUrl;
+                    if (dom.removeBackgroundBgBtn) {
+                        dom.removeBackgroundBgBtn.disabled = true; // SVGs not supported by eraser
+                    }
                 }
                 
                 if (window.generateTemplate) {
                     window.generateTemplate();
+                }
+                if (window.updateBackgroundRemovalButtons) {
+                    window.updateBackgroundRemovalButtons();
                 }
             };
             reader.readAsText(file);
@@ -331,6 +337,9 @@ export async function handleImageUpload(event, imageType) {
                     }
                 } else if (imageType === 'bg') {
                     state.uploadedBgImageData = imageDataUrl;
+                    if (dom.removeBackgroundBgBtn) {
+                        dom.removeBackgroundBgBtn.disabled = false;
+                    }
                 }
                 
                 if (window.generateTemplate) {

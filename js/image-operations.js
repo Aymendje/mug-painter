@@ -1,4 +1,4 @@
-
+import { state } from './config.js';
 // === IMAGE COMPRESSION ===
 const COMPRESSION_LIMIT = 8 * 1024 * 1024; // 8MB
 
@@ -80,7 +80,14 @@ export async function compressImage(file, maxSizeBytes = COMPRESSION_LIMIT) {
 
 // === BACKGROUND REMOVAL ===
 export function removeImageBackground(imageType) {
-    const imageData = imageType === 'face' ? state.uploadedFaceImage : state.uploadedBackImage;
+    let imageData = null;
+    if (imageType === 'face') {
+        imageData = state.uploadedFaceImage;
+    } else if (imageType === 'back') {
+        imageData = state.uploadedBackImage;
+    } else if (imageType === 'bg') {
+        imageData = state.uploadedBgImageData;
+    }
     if (!imageData) return;
 
     const canvas = document.createElement('canvas');
@@ -133,8 +140,10 @@ export function removeImageBackground(imageType) {
         
         if (imageType === 'face') {
             state.uploadedFaceImage = processedDataUrl;
-        } else {
+        } else if (imageType === 'back') {
             state.uploadedBackImage = processedDataUrl;
+        } else if (imageType === 'bg') {
+            state.uploadedBgImageData = processedDataUrl;
         }
         
         // Regenerate template
@@ -252,6 +261,93 @@ export function svgToPng(svgString) {
             img.src = url;
         } catch (error) {
             reject(error);
+        }
+    });
+}
+
+export function flipPngHorizontally(pngBlob) {
+    return new Promise((resolve, reject) => {
+        try {
+            if (!pngBlob) {
+                reject(new Error('flipPngHorizontally: input is required'));
+                return;
+            }
+
+            const img = new Image();
+            let objectUrl = null;
+
+            const cleanup = () => {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+            };
+
+            img.onload = () => {
+                try {
+                    const width = img.naturalWidth || img.width;
+                    const height = img.naturalHeight || img.height;
+
+                    if (!width || !height) {
+                        cleanup();
+                        reject(new Error('flipPngHorizontally: invalid image dimensions'));
+                        return;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // Preserve transparency and flip horizontally
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.translate(width, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        cleanup();
+                        if (blob) {
+                            resolve(blob);
+                            return;
+                        }
+                        // Fallback if toBlob returns null (older browsers)
+                        try {
+                            const dataUrl = canvas.toDataURL('image/png');
+                            const parts = dataUrl.split(',');
+                            const mime = parts[0].match(/:(.*?);/)[1];
+                            const binary = atob(parts[1]);
+                            const len = binary.length;
+                            const arrayBuffer = new ArrayBuffer(len);
+                            const bytes = new Uint8Array(arrayBuffer);
+                            for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+                            resolve(new Blob([arrayBuffer], { type: mime }));
+                        } catch (err) {
+                            reject(err);
+                        }
+                    }, 'image/png');
+                } catch (error) {
+                    cleanup();
+                    reject(error);
+                }
+            };
+
+            img.onerror = () => {
+                cleanup();
+                reject(new Error('flipPngHorizontally: failed to load image'));
+            };
+
+            if (pngBlob instanceof Blob) {
+                objectUrl = URL.createObjectURL(pngBlob);
+                img.src = objectUrl;
+            } else if (typeof pngBlob === 'string') {
+                // Assume data URL or regular URL
+                img.src = pngBlob;
+            } else {
+                reject(new Error('flipPngHorizontally: expected a Blob or data URL string'));
+            }
+        } catch (e) {
+            reject(e);
         }
     });
 }

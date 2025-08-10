@@ -97,26 +97,37 @@
                         <div id="bg-color-controls" class="hidden items-center gap-2">
                             <input type="color" id="bgColorPicker" value="#BFDBFE" class="h-12 w-64 border-gray-300 rounded-md p-1 cursor-pointer">
                         </div>
-                        <div id="bg-image-controls" class="hidden flex flex-wrap items-center gap-2">
-                             <input type="file" id="bgImageUpload" class="hidden" accept="image/*,.svg">
-                             <button id="bgUploadBtn" class="btn btn-secondary h-12">
-                                Upload Background
-                            </button>
-                            <select id="bgImageStyle" class="select-field h-12" selected="fill">
-                                <option value="fill">Fill</option>
-                                <option value="fit">Fit</option>
-                                <option value="stretch">Stretch</option>
-                                <option value="tile">Tile</option>
-                                <option value="center">Center</option>
-                            </select>
-                            <select id="bgImageSize" class="select-field h-12" selected="original">
-                                <option value="original">Original</option>
-                                <option value="xs">Extra Small</option>
-                                <option value="s">Small</option>
-                                <option value="m">Medium</option>
-                                <option value="l">Large</option>
-                                <option value="xl">Extra Large</option>
-                            </select>
+                        <div id="bg-image-controls" class="hidden flex flex-col gap-2">
+                             <!-- Row 1: Upload + Style + Magic Eraser -->
+                             <div class="flex items-center gap-2">
+                                 <input type="file" id="bgImageUpload" class="hidden" accept="image/*,.svg">
+                                 <button id="bgUploadBtn" class="btn btn-secondary h-12">Upload Background</button>
+                                 <select id="bgImageStyle" class="select-field h-12" selected="fill">
+                                     <option value="fill">Fill</option>
+                                     <option value="fit">Fit</option>
+                                     <option value="stretch">Stretch</option>
+                                     <option value="tile">Tile</option>
+                                     <option value="center">Center</option>
+                                 </select>
+                                 <button id="removeBackgroundBgBtn" class="btn btn-secondary btn-icon" title="Magic Eraser" disabled>🪄</button>
+                             </div>
+                             <!-- Row 2: Flip/Rotate + Size -->
+                             <div class="flex items-center gap-2">
+                                 <div class="flex gap-2">
+                                     <button id="flipBgHBtn" class="btn btn-secondary btn-icon" title="Flip Horizontal"><img src="https://www.svgrepo.com/download/509931/flip-horizontal.svg" class="w-5 h-5" alt="Flip Horizontal"></button>
+                                     <button id="flipBgVBtn" class="btn btn-secondary btn-icon" title="Flip Vertical"><img src="https://www.svgrepo.com/download/509932/flip-vertical.svg" class="w-5 h-5" alt="Flip Vertical"></button>
+                                     <button id="rotateBgLBtn" class="btn btn-secondary btn-icon" title="Rotate Left"><img src="https://www.svgrepo.com/download/501707/rotate-left.svg" class="w-5 h-5" alt="Rotate Left"></button>
+                                     <button id="rotateBgRBtn" class="btn btn-secondary btn-icon" title="Rotate Right"><img src="https://www.svgrepo.com/download/501709/rotate-right.svg" class="w-5 h-5" alt="Rotate Right"></button>
+                                 </div>
+                                 <select id="bgImageSize" class="select-field h-12" selected="original">
+                                     <option value="original">Original</option>
+                                     <option value="xs">Extra Small</option>
+                                     <option value="s">Small</option>
+                                     <option value="m">Medium</option>
+                                     <option value="l">Large</option>
+                                     <option value="xl">Extra Large</option>
+                                 </select>
+                             </div>
                         </div>
                     </div>
                 </div>

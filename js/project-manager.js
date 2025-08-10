@@ -24,7 +24,10 @@ export function collectProjectData() {
             color: dom.bgColorPicker.value,
             imageData: state.uploadedBgImageData,
             imageStyle: dom.bgImageStyle.value,
-            imageSize: dom.bgImageSize.value
+            imageSize: dom.bgImageSize.value,
+            isFlippedH: state.isBgFlippedH,
+            isFlippedV: state.isBgFlippedV,
+            rotation: state.bgRotation
         },
         
         // Face artwork settings
@@ -133,6 +136,9 @@ function loadBackgroundData(bg) {
     state.uploadedBgImageData = bg.imageData || null;
     dom.bgImageStyle.value = bg.imageStyle || 'fill';
     dom.bgImageSize.value = bg.imageSize || 'original';
+    state.isBgFlippedH = bg.isFlippedH || false;
+    state.isBgFlippedV = bg.isFlippedV || false;
+    state.bgRotation = bg.rotation || 0;
 }
 
 // === FACE ART DATA LOADING ===

@@ -47,6 +47,9 @@ export const state = {
     
     // Background state
     uploadedBgImageData: null,
+    isBgFlippedH: false,
+    isBgFlippedV: false,
+    bgRotation: 0,
     
     // Text formatting states - Face
     isFaceBold: false,
@@ -173,6 +176,11 @@ export const dom = {
     bgImageStyle: document.getElementById('bgImageStyle'),
     bgImageSize: document.getElementById('bgImageSize'),
     bgNoneControls: document.getElementById('bg-none-controls'),
+    removeBackgroundBgBtn: document.getElementById('removeBackgroundBgBtn'),
+    flipBgHBtn: document.getElementById('flipBgHBtn'),
+    flipBgVBtn: document.getElementById('flipBgVBtn'),
+    rotateBgLBtn: document.getElementById('rotateBgLBtn'),
+    rotateBgRBtn: document.getElementById('rotateBgRBtn'),
     
     // Export controls
     exportFormatSelect: document.getElementById('exportFormat'),

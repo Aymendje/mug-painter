@@ -266,6 +266,21 @@ export function setupEventListeners() {
     dom.bgImageUploadInput.addEventListener('change', (e) => handleImageUpload(e, 'bg'));
     dom.bgImageStyle.addEventListener('change', updateControlsVisibility);
     dom.bgImageSize.addEventListener('change', generateTemplate);
+    if (dom.removeBackgroundBgBtn) {
+        dom.removeBackgroundBgBtn.addEventListener('click', () => removeImageBackground('bg'));
+    }
+    if (dom.flipBgHBtn) {
+        dom.flipBgHBtn.addEventListener('click', () => { state.isBgFlippedH = !state.isBgFlippedH; generateTemplate(); });
+    }
+    if (dom.flipBgVBtn) {
+        dom.flipBgVBtn.addEventListener('click', () => { state.isBgFlippedV = !state.isBgFlippedV; generateTemplate(); });
+    }
+    if (dom.rotateBgLBtn) {
+        dom.rotateBgLBtn.addEventListener('click', () => { state.bgRotation = (state.bgRotation - 90 + 360) % 360; generateTemplate(); });
+    }
+    if (dom.rotateBgRBtn) {
+        dom.rotateBgRBtn.addEventListener('click', () => { state.bgRotation = (state.bgRotation + 90) % 360; generateTemplate(); });
+    }
 
     // === DOWNLOAD AND EXPORT LISTENERS ===
     dom.downloadDesignBtn.addEventListener('click', () => {

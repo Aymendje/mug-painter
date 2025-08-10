@@ -1,6 +1,8 @@
 // 3d-engine.js - Three.js 3D visualization functionality
 
 import { state, dom } from './config.js';
+import { svgToPng } from './image-operations.js';
+import { flipPngHorizontally } from './image-operations.js';
 
 // === 3D SCENE INITIALIZATION ===
 export function init3DScene() {
@@ -540,24 +542,24 @@ export async function createMugTexture(svgForDesign) {
         'stroke="none"'
     );
     
-    // Create two canvases: one for SVG->PNG conversion, one for flipping
+    // Create canvas for SVG->PNG conversion
     const svgCanvas = document.createElement('canvas');
     const svgCtx = svgCanvas.getContext('2d');
-    const flipCanvas = document.createElement('canvas');
-    const flipCtx = flipCanvas.getContext('2d');
     
     // Get dimensions from svg-preview instead of hardcoding
     const previewRect = dom.svgPreview.getBoundingClientRect();
     const width = previewRect.width > 0 ? previewRect.width : 1024;
     const height = previewRect.height > 0 ? previewRect.height : 512;
     
-    svgCanvas.width = flipCanvas.width = width;
-    svgCanvas.height = flipCanvas.height = height;
+    svgCanvas.width = width;
+    svgCanvas.height = height;
     
     // Create image from SVG
     const img = new Image();
-    const svgBlob = new Blob([svg3D], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const pngBlob = await svgToPng(svg3D);
+    // flip the png horizontally
+    const flippedPngBlob = await flipPngHorizontally(pngBlob);
+    const url = URL.createObjectURL(flippedPngBlob);
     
     return new Promise(async (resolve) => {
         img.onload = async () => {
@@ -573,17 +575,8 @@ export async function createMugTexture(svgForDesign) {
                 svgCtx.fillRect(0, 0, width, height);
                 svgCtx.drawImage(img, 0, 0, width, height);
                 
-                // Step 2: Flip the PNG horizontally on second canvas
-                flipCtx.fillStyle = '#ffffff';
-                flipCtx.fillRect(0, 0, width, height);
-                flipCtx.save();
-                flipCtx.translate(width, 0);
-                flipCtx.scale(-1, 1);
-                flipCtx.drawImage(svgCanvas, 0, 0);
-                flipCtx.restore();
-                
-                // Create Three.js texture from flipped canvas
-                const texture = new THREE.CanvasTexture(flipCanvas);
+                // Create Three.js texture directly from the rendered SVG canvas (no flip)
+                const texture = new THREE.CanvasTexture(svgCanvas);
                 texture.wrapS = THREE.RepeatWrapping;
                 texture.wrapT = THREE.RepeatWrapping;
                 
